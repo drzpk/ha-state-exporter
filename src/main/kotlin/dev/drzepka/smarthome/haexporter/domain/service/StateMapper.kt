@@ -1,9 +1,7 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
 import dev.drzepka.smarthome.haexporter.domain.exception.MappingException
-import dev.drzepka.smarthome.haexporter.domain.value.DefaultValueMapping
-import dev.drzepka.smarthome.haexporter.domain.value.StateMapping
-import dev.drzepka.smarthome.haexporter.domain.value.StateMappingTargetType
+import dev.drzepka.smarthome.haexporter.domain.value.*
 import org.apache.logging.log4j.kotlin.Logging
 
 class StateMapper {
@@ -12,20 +10,20 @@ class StateMapper {
     fun registerMapping(stateMapping: StateMapping) {
         logger.info { "Registering mapping: ${stateMapping.name}" }
 
-        val valueMap = mutableMapOf<String?, DefaultValueMapping>()
+        val valueMap = mutableMapOf<String?, StateValue>()
         var mappingCount = 0
 
         stateMapping.mappings.forEach {
-            val convertedTo = convertToTargetType(it.to, it.toType)
+            val stateValue = convertToStateValue(it.to, it.toType)
                 ?: throwMappingException(stateMapping.name, it.to, it.toType)
-            valueMap[it.from] = DefaultValueMapping(convertedTo, it.toType)
+            valueMap[it.from] = stateValue
             mappingCount++
         }
 
         stateMapping.defaultMapping?.let {
-            val convertedTo = convertToTargetType(it.to, it.toType)
+            val stateValue = convertToStateValue(it.to, it.toType)
                 ?: throwMappingException(stateMapping.name, it.to, it.toType)
-            valueMap[null] = it.copy(to = convertedTo)
+            valueMap[null] = stateValue
             mappingCount++
         }
 
@@ -33,7 +31,7 @@ class StateMapper {
         logger.info { "Mapping has been registered with $mappingCount value mapping(s)" }
     }
 
-    fun mapState(mappingName: String, input: String): Pair<StateMappingTargetType, Any>? {
+    fun mapState(mappingName: String, input: String): StateValue? {
         logger.trace { "Converting the input '$input' of mapping '$mappingName" }
 
         val mapping = mappings[mappingName]
@@ -46,27 +44,28 @@ class StateMapper {
         if (result == null)
             result = mapping[null]
 
-        return result?.let { it.toType to it.to }
+        return result
     }
 
-    private fun convertToTargetType(source: Any, toType: StateMappingTargetType): Any? = when (toType) {
-        StateMappingTargetType.STRING -> source
-        StateMappingTargetType.LONG -> convertToLong(source)
-        StateMappingTargetType.DOUBLE -> convertToDouble(source)
-        StateMappingTargetType.BOOL -> convertToBool(source)
+    private fun convertToStateValue(source: Any, toType: StateMappingTargetType): StateValue? = when (toType) {
+        StateMappingTargetType.STRING -> StringStateValue(source as String)
+        StateMappingTargetType.NUMBER -> convertToNumber(source)?.let { NumericStateValue(it) }
+        StateMappingTargetType.BOOL -> convertToBool(source)?.let { BooleanStateValue(it) }
     }
 
-    private fun convertToLong(value: Any): Long? = when (value) {
-        is Number -> value.toLong()
-        is String -> value.toLongOrNull()
-        else -> null
-    }
-
-
-    private fun convertToDouble(value: Any): Double? = when (value) {
-        is Number -> value.toDouble()
-        is String -> value.toDoubleOrNull()
-        else -> null
+    private fun convertToNumber(value: Any): Number? {
+        return if (value is Number)
+            value
+        else if (value is String && value.contains('.'))
+            value.toDoubleOrNull()
+        else if (value is String) {
+            val long = value.toLongOrNull() ?: return null
+            if (long <= Int.MAX_VALUE && long >= Int.MIN_VALUE)
+                long.toInt()
+            else
+                long
+        } else
+            null
     }
 
     private fun convertToBool(value: Any): Boolean? {
@@ -94,4 +93,4 @@ class StateMapper {
     }
 }
 
-typealias ValueMap = Map<String?, DefaultValueMapping>
+typealias ValueMap = Map<String?, StateValue>

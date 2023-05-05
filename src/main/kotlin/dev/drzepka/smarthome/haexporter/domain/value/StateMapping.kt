@@ -18,5 +18,5 @@ data class DefaultValueMapping(
 )
 
 enum class StateMappingTargetType {
-    STRING, LONG, DOUBLE, BOOL
+    STRING, NUMBER, BOOL
 }

@@ -1,10 +1,7 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
 import dev.drzepka.smarthome.haexporter.domain.exception.MappingException
-import dev.drzepka.smarthome.haexporter.domain.value.DefaultValueMapping
-import dev.drzepka.smarthome.haexporter.domain.value.StateMapping
-import dev.drzepka.smarthome.haexporter.domain.value.StateMappingTargetType
-import dev.drzepka.smarthome.haexporter.domain.value.ValueMapping
+import dev.drzepka.smarthome.haexporter.domain.value.*
 import org.assertj.core.api.BDDAssertions.catchException
 import org.assertj.core.api.BDDAssertions.then
 import org.junit.jupiter.api.Test
@@ -29,19 +26,42 @@ internal class StateMapperTest {
         val output1 = mapper.mapState("string-mapping", "enabled")
         val output2 = mapper.mapState("string-mapping", "disabled")
 
-        then(output1).isEqualTo(StateMappingTargetType.STRING to "on")
-        then(output2).isEqualTo(StateMappingTargetType.STRING to "off")
+        then(output1).isEqualTo(StringStateValue("on"))
+        then(output2).isEqualTo(StringStateValue("off"))
     }
 
     @Test
-    fun `should map state to LONG`() {
+    fun `should map state to NUMBER (integer)`() {
+        val mapping = StateMapping(
+            "int-mapping",
+            listOf(
+                ValueMapping("small", 1, StateMappingTargetType.NUMBER),
+                ValueMapping("medium", 2, StateMappingTargetType.NUMBER),
+                ValueMapping("large", 3, StateMappingTargetType.NUMBER),
+                ValueMapping("xl", "4", StateMappingTargetType.NUMBER),
+            ),
+            null
+        )
+        val mapper = StateMapper().apply { registerMapping(mapping) }
+
+        val output1 = mapper.mapState("int-mapping", "small")
+        val output2 = mapper.mapState("int-mapping", "medium")
+        val output3 = mapper.mapState("int-mapping", "large")
+        val output4 = mapper.mapState("int-mapping", "xl")
+
+        then(output1).isEqualTo(NumericStateValue(1))
+        then(output2).isEqualTo(NumericStateValue(2))
+        then(output3).isEqualTo(NumericStateValue(3))
+        then(output4).isEqualTo(NumericStateValue(4))
+    }
+
+    @Test
+    fun `should map state to NUMBER (long)`() {
         val mapping = StateMapping(
             "long-mapping",
             listOf(
-                ValueMapping("small", 1L, StateMappingTargetType.LONG),
-                ValueMapping("medium", 2, StateMappingTargetType.LONG),
-                ValueMapping("large", 3.0, StateMappingTargetType.LONG),
-                ValueMapping("xl", "4", StateMappingTargetType.LONG),
+                ValueMapping("small", Int.MAX_VALUE + 1L, StateMappingTargetType.NUMBER),
+                ValueMapping("medium", (Int.MIN_VALUE - 5L).toString(), StateMappingTargetType.NUMBER),
             ),
             null
         )
@@ -49,38 +69,28 @@ internal class StateMapperTest {
 
         val output1 = mapper.mapState("long-mapping", "small")
         val output2 = mapper.mapState("long-mapping", "medium")
-        val output3 = mapper.mapState("long-mapping", "large")
-        val output4 = mapper.mapState("long-mapping", "xl")
 
-        then(output1).isEqualTo(StateMappingTargetType.LONG to 1L)
-        then(output2).isEqualTo(StateMappingTargetType.LONG to 2L)
-        then(output3).isEqualTo(StateMappingTargetType.LONG to 3L)
-        then(output4).isEqualTo(StateMappingTargetType.LONG to 4L)
+        then(output1).isEqualTo(NumericStateValue(Int.MAX_VALUE + 1L))
+        then(output2).isEqualTo(NumericStateValue(Int.MIN_VALUE - 5L))
     }
 
     @Test
-    fun `should map state to DOUBLE`() {
+    fun `should map state to NUMBER (double`() {
         val mapping = StateMapping(
             "double-mapping",
             listOf(
-                ValueMapping("small", 1L, StateMappingTargetType.DOUBLE),
-                ValueMapping("medium", 2, StateMappingTargetType.DOUBLE),
-                ValueMapping("large", 3.0, StateMappingTargetType.DOUBLE),
-                ValueMapping("xl", "4", StateMappingTargetType.DOUBLE),
+                ValueMapping("large", 3.0, StateMappingTargetType.NUMBER),
+                ValueMapping("xl", "4.123", StateMappingTargetType.NUMBER),
             ),
             null
         )
         val mapper = StateMapper().apply { registerMapping(mapping) }
 
-        val output1 = mapper.mapState("double-mapping", "small")
-        val output2 = mapper.mapState("double-mapping", "medium")
-        val output3 = mapper.mapState("double-mapping", "large")
-        val output4 = mapper.mapState("double-mapping", "xl")
+        val output1 = mapper.mapState("double-mapping", "large")
+        val output2 = mapper.mapState("double-mapping", "xl")
 
-        then(output1).isEqualTo(StateMappingTargetType.DOUBLE to 1.0)
-        then(output2).isEqualTo(StateMappingTargetType.DOUBLE to 2.0)
-        then(output3).isEqualTo(StateMappingTargetType.DOUBLE to 3.0)
-        then(output4).isEqualTo(StateMappingTargetType.DOUBLE to 4.0)
+        then(output1).isEqualTo(NumericStateValue(3.0))
+        then(output2).isEqualTo(NumericStateValue(4.123))
     }
 
     @Test
@@ -100,9 +110,9 @@ internal class StateMapperTest {
         val output2 = mapper.mapState("bool-mapping", "on")
         val output3 = mapper.mapState("bool-mapping", "enabled")
 
-        then(output1).isEqualTo(StateMappingTargetType.BOOL to false)
-        then(output2).isEqualTo(StateMappingTargetType.BOOL to true)
-        then(output3).isEqualTo(StateMappingTargetType.BOOL to true)
+        then(output1).isEqualTo(BooleanStateValue(false))
+        then(output2).isEqualTo(BooleanStateValue(true))
+        then(output3).isEqualTo(BooleanStateValue(true))
     }
 
     @Test
@@ -110,15 +120,15 @@ internal class StateMapperTest {
         val mapping = StateMapping(
             "mapping",
             listOf(
-                ValueMapping("disabled", 0, StateMappingTargetType.LONG),
-                ValueMapping("enabled", 1, StateMappingTargetType.LONG),
+                ValueMapping("disabled", 0, StateMappingTargetType.NUMBER),
+                ValueMapping("enabled", 1, StateMappingTargetType.NUMBER),
             ),
-            DefaultValueMapping(-1, StateMappingTargetType.LONG)
+            DefaultValueMapping(-1, StateMappingTargetType.NUMBER)
         )
         val mapper = StateMapper().apply { registerMapping(mapping) }
 
         val output = mapper.mapState("mapping", "unknown")
-        then(output).isEqualTo(StateMappingTargetType.LONG to -1L)
+        then(output).isEqualTo(NumericStateValue(-1))
     }
 
     @Test
@@ -126,8 +136,8 @@ internal class StateMapperTest {
         val mapping = StateMapping(
             "mapping",
             listOf(
-                ValueMapping("disabled", 0, StateMappingTargetType.LONG),
-                ValueMapping("enabled", 1, StateMappingTargetType.LONG),
+                ValueMapping("disabled", 0, StateMappingTargetType.NUMBER),
+                ValueMapping("enabled", 1, StateMappingTargetType.NUMBER),
             ),
             null
         )
@@ -152,8 +162,8 @@ internal class StateMapperTest {
     companion object {
         @JvmStatic
         private fun getInvalidMappings(): Stream<ValueMapping> = listOf(
-            ValueMapping("test1", "abc", StateMappingTargetType.LONG),
-            ValueMapping("test2", "xyz", StateMappingTargetType.DOUBLE),
+            ValueMapping("test1", "abc", StateMappingTargetType.NUMBER),
+            ValueMapping("test2", "xyz", StateMappingTargetType.NUMBER),
             ValueMapping("test3", "jkl", StateMappingTargetType.BOOL),
         ).stream()
     }
