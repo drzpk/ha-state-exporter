@@ -1,0 +1,36 @@
+package dev.drzepka.smarthome.haexporter.infrasctucture.database
+
+import dev.drzepka.smarthome.haexporter.infrasctucture.properties.SQLDataSourceProperties
+import io.r2dbc.pool.ConnectionPool
+import io.r2dbc.pool.ConnectionPoolConfiguration
+import io.r2dbc.spi.Connection
+import io.r2dbc.spi.ConnectionFactories
+import io.r2dbc.spi.ConnectionFactoryOptions
+import kotlinx.coroutines.reactive.awaitSingle
+import java.time.Duration
+
+class SQLConnectionProvider(properties: SQLDataSourceProperties) {
+
+    private val pool: ConnectionPool
+
+    init {
+        val options = ConnectionFactoryOptions.builder()
+            .option(ConnectionFactoryOptions.DRIVER, properties.driver)
+            .option(ConnectionFactoryOptions.HOST, properties.host)
+            .option(ConnectionFactoryOptions.PORT, properties.port)
+            .option(ConnectionFactoryOptions.USER, properties.username)
+            .option(ConnectionFactoryOptions.PASSWORD, properties.password)
+            .option(ConnectionFactoryOptions.DATABASE, properties.database)
+            .build()
+
+        val factory = ConnectionFactories.get(options)
+        val poolConfig = ConnectionPoolConfiguration.builder(factory)
+            .maxIdleTime(Duration.ofSeconds(2))
+            .maxSize(10)
+            .build()
+
+        pool = ConnectionPool(poolConfig)
+    }
+
+    suspend fun getConnection(): Connection = pool.create().awaitSingle()
+}
