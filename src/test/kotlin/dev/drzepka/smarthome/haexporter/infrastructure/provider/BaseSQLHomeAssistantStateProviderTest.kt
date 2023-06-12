@@ -1,13 +1,13 @@
-package dev.drzepka.smarthome.haexporter.infrastructure.repository
+package dev.drzepka.smarthome.haexporter.infrastructure.provider
 
-import dev.drzepka.smarthome.haexporter.domain.entity.SourceState
-import dev.drzepka.smarthome.haexporter.domain.repository.SourceStateRepository
+import dev.drzepka.smarthome.haexporter.application.model.SourceState
+import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantStateProvider
 import dev.drzepka.smarthome.haexporter.domain.util.blockingGet
 import dev.drzepka.smarthome.haexporter.domain.util.toEpochSecondDouble
 import dev.drzepka.smarthome.haexporter.domain.util.trimToSeconds
 import dev.drzepka.smarthome.haexporter.infrasctucture.database.SQLConnectionProvider
 import dev.drzepka.smarthome.haexporter.infrasctucture.properties.SQLDataSourceProperties
-import dev.drzepka.smarthome.haexporter.infrasctucture.repository.SQLSourceStateRepository
+import dev.drzepka.smarthome.haexporter.infrasctucture.provider.SQLHomeAssistantStateProvider
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
@@ -22,10 +22,10 @@ import java.time.Instant
 @Suppress("SqlNoDataSourceInspection", "SqlResolve")
 @Timeout(5)
 @Testcontainers
-abstract class BaseSQLSourceStateRepositoryTest {
+abstract class BaseSQLHomeAssistantStateProviderTest {
 
     private lateinit var connectionProvider: SQLConnectionProvider
-    private lateinit var repository: SourceStateRepository
+    private lateinit var repository: HomeAssistantStateProvider
 
     abstract fun getContainer(): JdbcDatabaseContainer<*>
     abstract fun getProperties(): SQLDataSourceProperties
@@ -33,7 +33,7 @@ abstract class BaseSQLSourceStateRepositoryTest {
     @BeforeEach
     fun beforeEach() = runBlocking {
         connectionProvider = SQLConnectionProvider(getProperties())
-        repository = SQLSourceStateRepository(connectionProvider)
+        repository = SQLHomeAssistantStateProvider(connectionProvider)
 
 
         connectionProvider

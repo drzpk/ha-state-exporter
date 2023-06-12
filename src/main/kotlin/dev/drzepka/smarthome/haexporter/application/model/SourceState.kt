@@ -1,4 +1,4 @@
-package dev.drzepka.smarthome.haexporter.domain.entity
+package dev.drzepka.smarthome.haexporter.application.model
 
 import java.time.Instant
 

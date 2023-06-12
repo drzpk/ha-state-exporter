@@ -1,7 +1,7 @@
-package dev.drzepka.smarthome.haexporter.infrasctucture.repository
+package dev.drzepka.smarthome.haexporter.infrasctucture.provider
 
-import dev.drzepka.smarthome.haexporter.domain.entity.SourceState
-import dev.drzepka.smarthome.haexporter.domain.repository.SourceStateRepository
+import dev.drzepka.smarthome.haexporter.application.model.SourceState
+import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantStateProvider
 import dev.drzepka.smarthome.haexporter.infrasctucture.database.SQLConnectionProvider
 import dev.drzepka.smarthome.haexporter.infrasctucture.database.fromDBDateTime
 import dev.drzepka.smarthome.haexporter.infrasctucture.database.toDBDateTime
@@ -12,7 +12,7 @@ import kotlinx.coroutines.reactive.awaitSingle
 import java.time.Instant
 
 @Suppress("SqlNoDataSourceInspection")
-class SQLSourceStateRepository(private val provider: SQLConnectionProvider) : SourceStateRepository {
+class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider) : HomeAssistantStateProvider {
 
     override suspend fun getStates(fromInclusive: Instant, limit: Int): Flow<SourceState> {
         return provider.getConnection()
