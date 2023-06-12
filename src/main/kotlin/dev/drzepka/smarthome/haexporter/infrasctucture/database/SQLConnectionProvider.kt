@@ -7,6 +7,7 @@ import io.r2dbc.spi.Connection
 import io.r2dbc.spi.ConnectionFactories
 import io.r2dbc.spi.ConnectionFactoryOptions
 import kotlinx.coroutines.reactive.awaitSingle
+import org.apache.logging.log4j.kotlin.Logging
 import java.time.Duration
 
 class SQLConnectionProvider(properties: SQLDataSourceProperties) {
@@ -14,6 +15,7 @@ class SQLConnectionProvider(properties: SQLDataSourceProperties) {
     private val pool: ConnectionPool
 
     init {
+        logger.info { "Creating SQL connection pool with ${properties.copy(password = "***")}" }
         val options = ConnectionFactoryOptions.builder()
             .option(ConnectionFactoryOptions.DRIVER, properties.driver)
             .option(ConnectionFactoryOptions.HOST, properties.host)
@@ -33,4 +35,6 @@ class SQLConnectionProvider(properties: SQLDataSourceProperties) {
     }
 
     suspend fun getConnection(): Connection = pool.create().awaitSingle()
+
+    companion object : Logging
 }
