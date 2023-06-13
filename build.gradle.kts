@@ -21,6 +21,10 @@ dependencies {
     implementation("org.mariadb.jdbc:mariadb-java-client:3.1.4")
     implementation("com.influxdb:influxdb-client-kotlin:6.8.0")
     implementation("com.influxdb:flux-dsl:6.8.0")
+    implementation("io.ktor:ktor-client-core:2.3.1")
+    implementation("io.ktor:ktor-client-apache5:2.3.1")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.1")
+    implementation("io.ktor:ktor-serialization-jackson:2.3.1")
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.20.0")
     implementation("org.apache.logging.log4j:log4j-api-kotlin:1.2.0")
@@ -37,6 +41,8 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter:1.18.0")
     testImplementation("org.testcontainers:mariadb:1.18.0")
     testImplementation("org.testcontainers:influxdb:1.18.0")
+    testImplementation("com.github.tomakehurst:wiremock:3.0.0-beta-8")
+    testImplementation("com.marcinziolo:kotlin-wiremock:2.0.2")
 }
 
 
