@@ -1,6 +1,6 @@
-package dev.drzepka.smarthome.haexporter.infrasctucture.database
+package dev.drzepka.smarthome.haexporter.infrastructure.database
 
-import dev.drzepka.smarthome.haexporter.infrasctucture.properties.SQLDataSourceProperties
+import dev.drzepka.smarthome.haexporter.infrastructure.properties.SQLDataSourceProperties
 import io.r2dbc.pool.ConnectionPool
 import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.spi.Connection

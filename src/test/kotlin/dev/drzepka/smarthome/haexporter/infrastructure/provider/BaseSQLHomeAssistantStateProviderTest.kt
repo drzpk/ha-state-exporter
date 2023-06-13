@@ -5,9 +5,8 @@ import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantStateP
 import dev.drzepka.smarthome.haexporter.domain.util.blockingGet
 import dev.drzepka.smarthome.haexporter.domain.util.toEpochSecondDouble
 import dev.drzepka.smarthome.haexporter.domain.util.trimToSeconds
-import dev.drzepka.smarthome.haexporter.infrasctucture.database.SQLConnectionProvider
-import dev.drzepka.smarthome.haexporter.infrasctucture.properties.SQLDataSourceProperties
-import dev.drzepka.smarthome.haexporter.infrasctucture.provider.SQLHomeAssistantStateProvider
+import dev.drzepka.smarthome.haexporter.infrastructure.database.SQLConnectionProvider
+import dev.drzepka.smarthome.haexporter.infrastructure.properties.SQLDataSourceProperties
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking

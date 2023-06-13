@@ -1,4 +1,4 @@
-package dev.drzepka.smarthome.haexporter.infrasctucture.database
+package dev.drzepka.smarthome.haexporter.infrastructure.database
 
 import java.time.Instant
 import kotlin.math.roundToLong

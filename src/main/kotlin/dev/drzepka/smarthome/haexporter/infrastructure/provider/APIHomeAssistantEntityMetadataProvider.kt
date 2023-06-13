@@ -1,4 +1,4 @@
-package dev.drzepka.smarthome.haexporter.infrasctucture.provider
+package dev.drzepka.smarthome.haexporter.infrastructure.provider
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import dev.drzepka.smarthome.haexporter.application.model.EntityMetadata
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantEntityMetadataProvider
-import dev.drzepka.smarthome.haexporter.infrasctucture.properties.HomeAssistantAPIProperties
+import dev.drzepka.smarthome.haexporter.infrastructure.properties.HomeAssistantAPIProperties
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.apache5.*

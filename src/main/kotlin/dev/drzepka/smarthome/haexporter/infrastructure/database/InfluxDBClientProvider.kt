@@ -1,9 +1,9 @@
-package dev.drzepka.smarthome.haexporter.infrasctucture.database
+package dev.drzepka.smarthome.haexporter.infrastructure.database
 
 import com.influxdb.client.InfluxDBClientOptions
 import com.influxdb.client.kotlin.InfluxDBClientKotlin
 import com.influxdb.client.kotlin.InfluxDBClientKotlinFactory
-import dev.drzepka.smarthome.haexporter.infrasctucture.properties.InfluxDBDataSourceProperties
+import dev.drzepka.smarthome.haexporter.infrastructure.properties.InfluxDBDataSourceProperties
 import org.apache.logging.log4j.kotlin.Logging
 
 class InfluxDBClientProvider(private val properties: InfluxDBDataSourceProperties) {

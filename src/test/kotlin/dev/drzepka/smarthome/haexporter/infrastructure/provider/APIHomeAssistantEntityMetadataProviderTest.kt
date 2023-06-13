@@ -8,8 +8,7 @@ import com.marcinziolo.kotlin.wiremock.equalTo
 import com.marcinziolo.kotlin.wiremock.get
 import com.marcinziolo.kotlin.wiremock.returnsJson
 import dev.drzepka.smarthome.haexporter.application.model.EntityMetadata
-import dev.drzepka.smarthome.haexporter.infrasctucture.properties.HomeAssistantAPIProperties
-import dev.drzepka.smarthome.haexporter.infrasctucture.provider.APIHomeAssistantEntityMetadataProvider
+import dev.drzepka.smarthome.haexporter.infrastructure.properties.HomeAssistantAPIProperties
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.BDDAssertions.then

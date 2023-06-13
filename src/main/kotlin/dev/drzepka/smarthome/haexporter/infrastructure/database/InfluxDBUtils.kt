@@ -1,4 +1,4 @@
-package dev.drzepka.smarthome.haexporter.infrasctucture.database
+package dev.drzepka.smarthome.haexporter.infrastructure.database
 
 import com.influxdb.client.write.Point
 import dev.drzepka.smarthome.haexporter.domain.value.BooleanStateValue

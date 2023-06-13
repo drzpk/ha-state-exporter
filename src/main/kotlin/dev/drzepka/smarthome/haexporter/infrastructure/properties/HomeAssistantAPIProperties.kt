@@ -1,4 +1,4 @@
-package dev.drzepka.smarthome.haexporter.infrasctucture.properties
+package dev.drzepka.smarthome.haexporter.infrastructure.properties
 
 data class HomeAssistantAPIProperties(
     val url: String,

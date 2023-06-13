@@ -3,8 +3,7 @@ package dev.drzepka.smarthome.haexporter.infrastructure.repository
 import dev.drzepka.smarthome.haexporter.domain.entity.State
 import dev.drzepka.smarthome.haexporter.domain.util.trimToSeconds
 import dev.drzepka.smarthome.haexporter.domain.value.*
-import dev.drzepka.smarthome.haexporter.infrasctucture.database.InfluxDBClientProvider
-import dev.drzepka.smarthome.haexporter.infrasctucture.repository.InfluxDBStateRepository
+import dev.drzepka.smarthome.haexporter.infrastructure.database.InfluxDBClientProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.runBlocking

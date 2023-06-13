@@ -1,4 +1,4 @@
-package dev.drzepka.smarthome.haexporter.infrasctucture.repository
+package dev.drzepka.smarthome.haexporter.infrastructure.repository
 
 import com.influxdb.client.domain.WritePrecision
 import com.influxdb.client.write.Point
@@ -7,8 +7,8 @@ import com.influxdb.query.dsl.functions.restriction.Restrictions
 import dev.drzepka.smarthome.haexporter.domain.entity.State
 import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
 import dev.drzepka.smarthome.haexporter.domain.value.EntityId
-import dev.drzepka.smarthome.haexporter.infrasctucture.database.InfluxDBClientProvider
-import dev.drzepka.smarthome.haexporter.infrasctucture.database.addField
+import dev.drzepka.smarthome.haexporter.infrastructure.database.InfluxDBClientProvider
+import dev.drzepka.smarthome.haexporter.infrastructure.database.addField
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.Instant

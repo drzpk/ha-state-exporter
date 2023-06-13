@@ -3,7 +3,7 @@ package dev.drzepka.smarthome.haexporter.infrastructure.repository
 import com.influxdb.client.InfluxDBClientFactory
 import com.influxdb.query.FluxRecord
 import com.influxdb.query.dsl.Flux
-import dev.drzepka.smarthome.haexporter.infrasctucture.properties.InfluxDBDataSourceProperties
+import dev.drzepka.smarthome.haexporter.infrastructure.properties.InfluxDBDataSourceProperties
 import kotlinx.coroutines.delay
 import org.assertj.core.api.BDDAssertions.then
 import org.junit.jupiter.api.Timeout
