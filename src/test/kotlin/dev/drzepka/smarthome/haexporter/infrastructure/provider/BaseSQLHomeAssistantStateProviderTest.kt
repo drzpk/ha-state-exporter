@@ -7,7 +7,6 @@ import dev.drzepka.smarthome.haexporter.domain.util.toEpochSecondDouble
 import dev.drzepka.smarthome.haexporter.domain.util.trimToSeconds
 import dev.drzepka.smarthome.haexporter.infrastructure.database.SQLConnectionProvider
 import dev.drzepka.smarthome.haexporter.infrastructure.properties.SQLDataSourceProperties
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.BDDAssertions.then
@@ -45,7 +44,7 @@ abstract class BaseSQLHomeAssistantStateProviderTest {
     }
 
     @Test
-    fun `should get states for given start time and limit`() = runBlocking {
+    fun `should get states for given start time, offset, and limit`() = runBlocking {
         val time = Instant.now().trimToSeconds()
         createState(1, "entity_1", "state_1", time.plusSeconds(1))
         createState(2, "entity_2", "state_2", time.plusSeconds(2))
@@ -53,11 +52,11 @@ abstract class BaseSQLHomeAssistantStateProviderTest {
         createState(4, "entity_4", "state_4", time.plusSeconds(4))
         createState(5, "entity_5", "state_5", time.plusSeconds(5))
 
-        val states = repository.getStates(time.plusSeconds(2), 2).toList()
+        val states = repository.getStates(time.plusSeconds(2), 1, 2)
 
         then(states).hasSize(2)
-        then(states[0]).isEqualTo(SourceState(2, "entity_2", "state_2", time.plusSeconds(2)))
-        then(states[1]).isEqualTo(SourceState(3, "entity_3", "state_3", time.plusSeconds(3)))
+        then(states[0]).isEqualTo(SourceState(3, "entity_3", "state_3", time.plusSeconds(3)))
+        then(states[1]).isEqualTo(SourceState(4, "entity_4", "state_4", time.plusSeconds(4)))
 
         Unit
     }
@@ -70,7 +69,7 @@ abstract class BaseSQLHomeAssistantStateProviderTest {
         createState(3, "id", "state", time.plusSeconds(15))
         createState(4, "id", "state", time.plusSeconds(14))
 
-        val states = repository.getStates(time, 10).toList()
+        val states = repository.getStates(time, 0, 10)
 
         then(states).hasSize(4)
         then(states.map { it.id }).containsAll(listOf(2, 1, 4, 3))

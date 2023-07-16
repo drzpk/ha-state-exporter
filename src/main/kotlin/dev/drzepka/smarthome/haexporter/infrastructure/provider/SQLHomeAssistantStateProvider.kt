@@ -6,7 +6,7 @@ import dev.drzepka.smarthome.haexporter.infrastructure.database.SQLConnectionPro
 import dev.drzepka.smarthome.haexporter.infrastructure.database.fromDBDateTime
 import dev.drzepka.smarthome.haexporter.infrastructure.database.toDBDateTime
 import io.r2dbc.spi.Readable
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import java.time.Instant
@@ -14,7 +14,7 @@ import java.time.Instant
 @Suppress("SqlNoDataSourceInspection")
 class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider) : HomeAssistantStateProvider {
 
-    override suspend fun getStates(fromInclusive: Instant, limit: Int): Flow<SourceState> {
+    override suspend fun getStates(fromInclusive: Instant, offset: Int, limit: Int): List<SourceState> {
         return provider.getConnection()
             .createStatement(
                 """
@@ -22,13 +22,14 @@ class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider)
                     FROM $TABLE_STATES
                     WHERE $COLUMN_LAST_UPDATED >= ${fromInclusive.toDBDateTime()}
                     ORDER BY $COLUMN_LAST_UPDATED
-                    LIMIT $limit
+                    LIMIT $offset, $limit
                  """.trimIndent()
             )
             .execute()
             .awaitSingle()
             .map { row -> row.toSourceState() }
             .asFlow()
+            .toList(mutableListOf())
     }
 
     private fun Readable.toSourceState(): SourceState = SourceState(
