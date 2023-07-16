@@ -1,10 +1,11 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
-import dev.drzepka.smarthome.haexporter.domain.properties.DevicesProperties
+import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.value.EntityId
 import org.apache.logging.log4j.kotlin.Logging
 
-class EntityIdResolver(private val devicesProperties: DevicesProperties) {
+class EntityIdResolver(entitiesProperties: EntitiesProperties) {
+    private val knownDevices = entitiesProperties.map { it.selector.device }.toSet()
 
     fun resolve(value: String): EntityId? {
         val parts = value.split('.', limit = 2)
@@ -27,8 +28,7 @@ class EntityIdResolver(private val devicesProperties: DevicesProperties) {
     }
 
     private fun resolveDeviceAndSuffix(value: String): Pair<String, String?>? {
-        val matchedDeviceId = devicesProperties
-            .map { it.id }
+        val matchedDeviceId = knownDevices
             .firstOrNull { value == it || value.startsWith("${it}_") }
             ?: return null
 
