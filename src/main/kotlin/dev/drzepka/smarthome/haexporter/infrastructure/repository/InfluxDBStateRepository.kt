@@ -26,7 +26,7 @@ class InfluxDBStateRepository(private val provider: InfluxDBClientProvider) : St
         val flux = Flux
             .from(provider.bucket)
             .range(Instant.EPOCH, Instant.now())
-            .filter(Restrictions.measurement().equal(entity.domainValue))
+            .filter(Restrictions.measurement().equal(entity.classValue))
             .filter(Restrictions.tag(DEVICE_TAG).equal(entity.device))
             .filter(Restrictions.field().equal(entity.getFieldName()))
             .keep(arrayOf(TIME_COLUMN))
@@ -41,16 +41,16 @@ class InfluxDBStateRepository(private val provider: InfluxDBClientProvider) : St
     }
 
     private fun State.toPoint(): Point {
-        return Point(entity.domainValue)
+        return Point(entity.classValue)
             .time(time, WritePrecision.S)
             .addField(entity.getFieldName(), value)
             .addTag(DEVICE_TAG, entity.device)
     }
 
-    private fun EntityId.getFieldName(): String = suffix ?: MISSING_SUFFIX_FIELD
+    private fun EntityId.getFieldName(): String = sensor ?: MISSING_MEASUREMENT_FIELD
 
     companion object {
-        private const val MISSING_SUFFIX_FIELD = "value"
+        private const val MISSING_MEASUREMENT_FIELD = "value"
         private const val DEVICE_TAG = "device"
         private const val TIME_COLUMN = "_time"
     }

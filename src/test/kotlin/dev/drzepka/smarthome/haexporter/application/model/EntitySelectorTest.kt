@@ -9,24 +9,24 @@ internal class EntitySelectorTest {
 
     @Test
     fun `should split single entity selector to elemental selector`() {
-        val selector = EntitySelector("domain", "device", "suffix")
+        val selector = EntitySelector("class", "device", "sensor")
         val split = selector.toElementalSelectors()
 
         then(split).hasSize(1)
-        then(split.first()).isEqualTo(ElementalEntitySelector("domain", "device", "suffix"))
+        then(split.first()).isEqualTo(ElementalEntitySelector("class", "device", "sensor"))
     }
 
     @Test
     fun `should split compound entity selector to elemental selectors`() {
-        val selector = EntitySelector(listOf("domain1", "domain2"), "device", listOf("suffix1", "suffix2", "suffix3"))
+        val selector = EntitySelector(listOf("class1", "class2"), "device", listOf("sensor1", "sensor2", "sensor3"))
         val split = selector.toElementalSelectors()
 
         then(split).hasSize(6)
-        then(split[0]).isEqualTo(ElementalEntitySelector("domain1", "device", "suffix1"))
-        then(split[1]).isEqualTo(ElementalEntitySelector("domain1", "device", "suffix2"))
-        then(split[2]).isEqualTo(ElementalEntitySelector("domain1", "device", "suffix3"))
-        then(split[3]).isEqualTo(ElementalEntitySelector("domain2", "device", "suffix1"))
-        then(split[4]).isEqualTo(ElementalEntitySelector("domain2", "device", "suffix2"))
-        then(split[5]).isEqualTo(ElementalEntitySelector("domain2", "device", "suffix3"))
+        then(split[0]).isEqualTo(ElementalEntitySelector("class1", "device", "sensor1"))
+        then(split[1]).isEqualTo(ElementalEntitySelector("class1", "device", "sensor2"))
+        then(split[2]).isEqualTo(ElementalEntitySelector("class1", "device", "sensor3"))
+        then(split[3]).isEqualTo(ElementalEntitySelector("class2", "device", "sensor1"))
+        then(split[4]).isEqualTo(ElementalEntitySelector("class2", "device", "sensor2"))
+        then(split[5]).isEqualTo(ElementalEntitySelector("class2", "device", "sensor3"))
     }
 }

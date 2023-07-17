@@ -1,34 +1,34 @@
 package dev.drzepka.smarthome.haexporter.domain.value
 
 data class EntitySelector(
-    val domains: List<String> = listOf(ANY_VALUE),
+    val classes: List<String> = listOf(ANY_VALUE),
     val device: String,
-    val suffixes: List<String>? = listOf(ANY_VALUE)
+    val sensors: List<String>? = listOf(ANY_VALUE)
 ) {
-    constructor(domain: String, device: String, suffix: String?)
-        : this(listOf(domain), device, if (suffix != null) listOf(suffix) else null)
+    constructor(`class`: String, device: String, sensor: String?)
+        : this(listOf(`class`), device, if (sensor != null) listOf(sensor) else null)
 
-    fun toElementalSelectors(): List<ElementalEntitySelector> = domains.flatMap { domain ->
-        if (!suffixes.isNullOrEmpty())
-            suffixes.map { suffix -> ElementalEntitySelector(domain, device, suffix) }
+    fun toElementalSelectors(): List<ElementalEntitySelector> = classes.flatMap { clazz ->
+        if (!sensors.isNullOrEmpty())
+            sensors.map { sensor -> ElementalEntitySelector(clazz, device, sensor) }
         else
-            listOf(ElementalEntitySelector(domain, device, null))
+            listOf(ElementalEntitySelector(clazz, device, null))
     }
 
     fun matches(entityId: EntityId): Boolean = entityId.let {
-        matchesDomain(it.domainValue) && matchesDevice(it.device) && matchesSuffix(it.suffix)
+        matchesClass(it.classValue) && matchesDevice(it.device) && matchesSensor(it.sensor)
     }
 
-    private fun matchesDomain(domain: String): Boolean = domains.any { it == domain || it == ANY_VALUE }
+    private fun matchesClass(clazz: String): Boolean = classes.any { it == clazz || it == ANY_VALUE }
 
     private fun matchesDevice(device: String): Boolean = this.device == device
 
-    private fun matchesSuffix(suffix: String?): Boolean = suffixes == null && suffix == null
-        || suffixes?.any { it == suffix || it == ANY_VALUE } ?: false
+    private fun matchesSensor(sensor: String?): Boolean = sensors == null && sensor == null
+        || sensors?.any { it == sensor || it == ANY_VALUE } ?: false
 }
 
-data class ElementalEntitySelector(val domain: String, val device: String, val suffix: String?) {
-    override fun toString(): String = "domain: $domain, device: $device, suffix: $suffix"
+data class ElementalEntitySelector(val `class`: String, val device: String, val sensor: String?) {
+    override fun toString(): String = "class: ${`class`}, device: $device, sensor: $sensor"
 }
 
 const val ANY_VALUE = "*"

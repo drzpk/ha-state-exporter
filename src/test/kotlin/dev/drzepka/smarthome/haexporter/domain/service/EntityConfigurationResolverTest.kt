@@ -18,58 +18,58 @@ internal class EntityConfigurationResolverTest {
     @Test
     fun `should resolve configuration for existing entity`() {
         val properties = EntitiesProperties(
-            EntityProperties(EntitySelector("domain1", "dev1", "suffix"), "mapping1"),
-            EntityProperties(EntitySelector(ANY_VALUE, "dev2", "suffix"), "mapping2"),
-            EntityProperties(EntitySelector("domain3", "dev3", ANY_VALUE), "mapping3"),
+            EntityProperties(EntitySelector("class1", "dev1", "sensor"), "mapping1"),
+            EntityProperties(EntitySelector(ANY_VALUE, "dev2", "sensor"), "mapping2"),
+            EntityProperties(EntitySelector("class3", "dev3", ANY_VALUE), "mapping3"),
             EntityProperties(EntitySelector(ANY_VALUE, "dev4", ANY_VALUE), "mapping4"),
-            EntityProperties(EntitySelector("domain5", "dev5", ANY_VALUE), "mapping5")
+            EntityProperties(EntitySelector("class5", "dev5", ANY_VALUE), "mapping5")
         )
 
         val resolver = EntityConfigurationResolver(properties)
 
-        then(resolver.resolve(EntityId("domain1", "dev1", "suffix"))).matches { it?.mapping == "mapping1" }
-        then(resolver.resolve(EntityId("any-domain", "dev2", "suffix"))).matches { it?.mapping == "mapping2" }
-        then(resolver.resolve(EntityId("domain3", "dev3", "any-suffix"))).matches { it?.mapping == "mapping3" }
-        then(resolver.resolve(EntityId("any-domain", "dev4", "any-suffix"))).matches { it?.mapping == "mapping4" }
-        then(resolver.resolve(EntityId("domain5", "dev5", "any-suffix"))).matches { it?.mapping == "mapping5" }
+        then(resolver.resolve(EntityId("class1", "dev1", "sensor"))).matches { it?.mapping == "mapping1" }
+        then(resolver.resolve(EntityId("any-class", "dev2", "sensor"))).matches { it?.mapping == "mapping2" }
+        then(resolver.resolve(EntityId("class3", "dev3", "any-sensor"))).matches { it?.mapping == "mapping3" }
+        then(resolver.resolve(EntityId("any-class", "dev4", "any-sensor"))).matches { it?.mapping == "mapping4" }
+        then(resolver.resolve(EntityId("class5", "dev5", "any-sensor"))).matches { it?.mapping == "mapping5" }
 
-        then(resolver.resolve(EntityId("domain1", "dev1", "suffix00"))).isNull()
-        then(resolver.resolve(EntityId("domain1", "dev1xx", "suffix"))).isNull()
-        then(resolver.resolve(EntityId("domain_", "dev1", "suffix"))).isNull()
+        then(resolver.resolve(EntityId("class1", "dev1", "sensor00"))).isNull()
+        then(resolver.resolve(EntityId("class1", "dev1xx", "sensor"))).isNull()
+        then(resolver.resolve(EntityId("class_", "dev1", "sensor"))).isNull()
     }
 
     @Test
     fun `should resolve first matching entity configuration`() {
         val properties = EntitiesProperties(
-            EntityProperties(EntitySelector("domain1", "dev1", "suffix"), "mapping1"),
-            EntityProperties(EntitySelector("domain2", "dev1", "suffix"), "mapping2"),
-            EntityProperties(EntitySelector("domain1", "dev1", ANY_VALUE), "mapping3"),
+            EntityProperties(EntitySelector("class1", "dev1", "sensor"), "mapping1"),
+            EntityProperties(EntitySelector("class2", "dev1", "sensor"), "mapping2"),
+            EntityProperties(EntitySelector("class1", "dev1", ANY_VALUE), "mapping3"),
             EntityProperties(EntitySelector(ANY_VALUE, "dev1", ANY_VALUE), "mapping4")
         )
 
         val resolver = EntityConfigurationResolver(properties)
 
-        then(resolver.resolve(EntityId("domain1", "dev1", "suffix"))).matches { it?.mapping == "mapping1" }
-        then(resolver.resolve(EntityId("domain2", "dev1", "suffix"))).matches { it?.mapping == "mapping2" }
-        then(resolver.resolve(EntityId("domain1", "dev1", "another"))).matches { it?.mapping == "mapping3" }
+        then(resolver.resolve(EntityId("class1", "dev1", "sensor"))).matches { it?.mapping == "mapping1" }
+        then(resolver.resolve(EntityId("class2", "dev1", "sensor"))).matches { it?.mapping == "mapping2" }
+        then(resolver.resolve(EntityId("class1", "dev1", "another"))).matches { it?.mapping == "mapping3" }
         then(resolver.resolve(EntityId("unknown", "dev1", "another"))).matches { it?.mapping == "mapping4" }
     }
 
     @Test
     fun `should resolve configuration with multiple values in selector`() {
         val properties = EntitiesProperties(
-            EntityProperties(EntitySelector(listOf("domain1"), "dev1", listOf("suffix1", "suffix2")), "mapping1"),
-            EntityProperties(EntitySelector(listOf("domain2", "domain3"), "dev1", listOf("suffix3")), "mapping2")
+            EntityProperties(EntitySelector(listOf("class1"), "dev1", listOf("sensor1", "sensor2")), "mapping1"),
+            EntityProperties(EntitySelector(listOf("class2", "class3"), "dev1", listOf("sensor3")), "mapping2")
         )
 
         val resolver = EntityConfigurationResolver(properties)
 
-        then(resolver.resolve(EntityId("domain1", "dev1", "suffix1"))).matches { it?.mapping == "mapping1" }
-        then(resolver.resolve(EntityId("domain1", "dev1", "suffix2"))).matches { it?.mapping == "mapping1" }
-        then(resolver.resolve(EntityId("domain2", "dev1", "suffix3"))).matches { it?.mapping == "mapping2" }
-        then(resolver.resolve(EntityId("domain3", "dev1", "suffix3"))).matches { it?.mapping == "mapping2" }
-        then(resolver.resolve(EntityId("domain1", "dev1", "suffix3"))).isNull()
-        then(resolver.resolve(EntityId("domain2", "dev1", "suffix4"))).isNull()
+        then(resolver.resolve(EntityId("class1", "dev1", "sensor1"))).matches { it?.mapping == "mapping1" }
+        then(resolver.resolve(EntityId("class1", "dev1", "sensor2"))).matches { it?.mapping == "mapping1" }
+        then(resolver.resolve(EntityId("class2", "dev1", "sensor3"))).matches { it?.mapping == "mapping2" }
+        then(resolver.resolve(EntityId("class3", "dev1", "sensor3"))).matches { it?.mapping == "mapping2" }
+        then(resolver.resolve(EntityId("class1", "dev1", "sensor3"))).isNull()
+        then(resolver.resolve(EntityId("class2", "dev1", "sensor4"))).isNull()
     }
 
     @ParameterizedTest
@@ -99,26 +99,26 @@ internal class EntityConfigurationResolverTest {
                 ElementalEntitySelector(ANY_VALUE, "dev1", ANY_VALUE) to listOf(
                     EntityProperties(EntitySelector(ANY_VALUE, "dev1", ANY_VALUE), "duplicated-dev"),
                     EntityProperties(EntitySelector(ANY_VALUE, "dev1", ANY_VALUE), "duplicated-dev"),
-                    EntityProperties(EntitySelector(ANY_VALUE, "dev1", "suffix"), "other"),
+                    EntityProperties(EntitySelector(ANY_VALUE, "dev1", "sensor"), "other"),
                 ),
-                ElementalEntitySelector("domain1", "dev1", ANY_VALUE) to listOf(
-                    EntityProperties(EntitySelector("domain1", "dev1", ANY_VALUE), "duplicated-domain-and-dev"),
-                    EntityProperties(EntitySelector("domain1", "dev1", ANY_VALUE), "duplicated-domain-and-dev"),
-                    EntityProperties(EntitySelector("domain1", "dev1", "suffix"), "other")
+                ElementalEntitySelector("class1", "dev1", ANY_VALUE) to listOf(
+                    EntityProperties(EntitySelector("class1", "dev1", ANY_VALUE), "duplicated-class-and-dev"),
+                    EntityProperties(EntitySelector("class1", "dev1", ANY_VALUE), "duplicated-class-and-dev"),
+                    EntityProperties(EntitySelector("class1", "dev1", "sensor"), "other")
                 ),
-                ElementalEntitySelector("domain1", "dev1", "suffix") to listOf(
-                    EntityProperties(EntitySelector("domain1", "dev1", "suffix"), "duplicated-everything"),
-                    EntityProperties(EntitySelector("domain1", "dev1", "suffix"), "duplicated-everything"),
-                    EntityProperties(EntitySelector("domain1", "dev1", "other"), "other")
+                ElementalEntitySelector("class1", "dev1", "sensor") to listOf(
+                    EntityProperties(EntitySelector("class1", "dev1", "sensor"), "duplicated-everything"),
+                    EntityProperties(EntitySelector("class1", "dev1", "sensor"), "duplicated-everything"),
+                    EntityProperties(EntitySelector("class1", "dev1", "other"), "other")
                 ),
-                ElementalEntitySelector("domain1", "dev1", "suffix2") to listOf(
+                ElementalEntitySelector("class1", "dev1", "sensor2") to listOf(
                     EntityProperties(
-                        EntitySelector(listOf("domain1"), "dev1", listOf("suffix1", "suffix2")),
-                        "overlapping-suffix"
+                        EntitySelector(listOf("class1"), "dev1", listOf("sensor1", "sensor2")),
+                        "overlapping-sensor"
                     ),
                     EntityProperties(
-                        EntitySelector(listOf("domain1"), "dev1", listOf("suffix2", "suffix3")),
-                        "overlapping-suffix"
+                        EntitySelector(listOf("class1"), "dev1", listOf("sensor2", "sensor3")),
+                        "overlapping-sensor"
                     )
                 )
             ).stream()

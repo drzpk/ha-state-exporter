@@ -34,11 +34,11 @@ class InfluxDBStateRepositoryTest : BaseInfluxDBTest() {
         then(records).hasSize(5)
 
         val trimmedTime = time.trimToSeconds()
-        records.assertContains(trimmedTime.plusSeconds(1), DOMAIN, "temp1", 23L, mapOf("device" to "computer"))
-        records.assertContains(trimmedTime.plusSeconds(2), DOMAIN, "temp2", 42.3, mapOf("device" to "computer"))
-        records.assertContains(trimmedTime.plusSeconds(3), DOMAIN, "state", "ok", mapOf("device" to "computer"))
-        records.assertContains(trimmedTime.plusSeconds(4), DOMAIN, "value", 12L, mapOf("device" to "thermometer"))
-        records.assertContains(trimmedTime.plusSeconds(5), DOMAIN, "enabled", true, mapOf("device" to "thermometer"))
+        records.assertContains(trimmedTime.plusSeconds(1), CLAZZ, "temp1", 23L, mapOf("device" to "computer"))
+        records.assertContains(trimmedTime.plusSeconds(2), CLAZZ, "temp2", 42.3, mapOf("device" to "computer"))
+        records.assertContains(trimmedTime.plusSeconds(3), CLAZZ, "state", "ok", mapOf("device" to "computer"))
+        records.assertContains(trimmedTime.plusSeconds(4), CLAZZ, "value", 12L, mapOf("device" to "thermometer"))
+        records.assertContains(trimmedTime.plusSeconds(5), CLAZZ, "enabled", true, mapOf("device" to "thermometer"))
     }
 
     @Test
@@ -64,12 +64,12 @@ class InfluxDBStateRepositoryTest : BaseInfluxDBTest() {
     }
 
 
-    private fun sensorState(time: Instant, device: String, suffix: String?, value: StateValue): State =
-        State(time, entityId(device, suffix), value)
+    private fun sensorState(time: Instant, device: String, measurement: String?, value: StateValue): State =
+        State(time, entityId(device, measurement), value)
 
-    private fun entityId(device: String, suffix: String?): EntityId = EntityId(DOMAIN, device, suffix)
+    private fun entityId(device: String, measurement: String?): EntityId = EntityId(CLAZZ, device, measurement)
 
     companion object {
-        private const val DOMAIN = "sensor"
+        private const val CLAZZ = "sensor"
     }
 }

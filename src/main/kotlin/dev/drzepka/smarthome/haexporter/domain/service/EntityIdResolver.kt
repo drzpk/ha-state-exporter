@@ -10,11 +10,11 @@ class EntityIdResolver(entitiesProperties: EntitiesProperties) {
     fun resolve(value: String): EntityId? {
         val parts = value.split('.', limit = 2)
         if (parts.size != 2) {
-            logger.debug { "Cannot resolve value: $value, domain delimiter wasn't found" }
+            logger.debug { "Cannot resolve value: $value, class delimiter wasn't found" }
             return null
         }
 
-        val pair = resolveDeviceAndSuffix(parts[1])
+        val pair = resolveDeviceAndSensor(parts[1])
         if (pair == null) {
             logger.debug { "Cannot resolve value: $value, device not found in configuration" }
             return null
@@ -27,16 +27,16 @@ class EntityIdResolver(entitiesProperties: EntitiesProperties) {
         )
     }
 
-    private fun resolveDeviceAndSuffix(value: String): Pair<String, String?>? {
+    private fun resolveDeviceAndSensor(value: String): Pair<String, String?>? {
         val matchedDeviceId = knownDevices
             .firstOrNull { value == it || value.startsWith("${it}_") }
             ?: return null
 
-        val suffix = if (matchedDeviceId != value)
+        val sensor = if (matchedDeviceId != value)
             value.substringAfter("${matchedDeviceId}_")
         else null
 
-        return matchedDeviceId to suffix
+        return matchedDeviceId to sensor
     }
 
     companion object : Logging

@@ -20,27 +20,27 @@ class EntityIdResolverTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["l1", "l1_l3"])
-    fun `should resolve entity id with suffix`(suffix: String) {
-        val resolved = resolver.resolve("sensor.living_room_$suffix")
+    fun `should resolve entity id with sensor`(sensor: String) {
+        val resolved = resolver.resolve("sensor.living_room_$sensor")
 
         then(resolved).isNotNull
         resolved as EntityId
 
-        then(resolved.domainValue).isEqualTo("sensor")
+        then(resolved.classValue).isEqualTo("sensor")
         then(resolved.device).isEqualTo("living_room")
-        then(resolved.suffix).isEqualTo(suffix)
+        then(resolved.sensor).isEqualTo(sensor)
     }
 
     @Test
-    fun `should resolve entity id without suffix`() {
+    fun `should resolve entity id without sensor`() {
         val resolved = resolver.resolve("sensor.kitchen_light")
 
         then(resolved).isNotNull
         resolved as EntityId
 
-        then(resolved.domainValue).isEqualTo("sensor")
+        then(resolved.classValue).isEqualTo("sensor")
         then(resolved.device).isEqualTo("kitchen_light")
-        then(resolved.suffix).isNull()
+        then(resolved.sensor).isNull()
     }
 
     @ParameterizedTest
