@@ -7,5 +7,6 @@ import java.time.Instant
 data class State(
     val time: Instant,
     val entity: EntityId,
+    val measurement: String,
     val value: StateValue
 )
