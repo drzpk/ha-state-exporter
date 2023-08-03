@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "1.8.21"
+    kotlin("plugin.allopen") version "1.8.21"
 }
 
 group = "dev.drzepka.smarthome"
@@ -45,6 +46,9 @@ dependencies {
     testImplementation("com.marcinziolo:kotlin-wiremock:2.0.2")
 }
 
+allOpen {
+    annotation("dev.drzepka.smarthome.haexporter.domain.util.Component")
+}
 
 tasks.test {
     useJUnitPlatform()

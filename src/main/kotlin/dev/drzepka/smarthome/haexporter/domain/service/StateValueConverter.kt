@@ -1,8 +1,10 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
+import dev.drzepka.smarthome.haexporter.domain.util.Component
 import dev.drzepka.smarthome.haexporter.domain.value.NumericStateValue
 import dev.drzepka.smarthome.haexporter.domain.value.StateValue
 
+@Component
 class StateValueConverter {
 
     private val conversionOrder = listOf<(String) -> StateValue?>(
