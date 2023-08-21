@@ -13,23 +13,23 @@ import org.testcontainers.utility.DockerImageName
 import java.time.Instant
 
 interface InfluxDBTrait {
-    val influxDB: InfluxDBContainer<*>
+    val influxDBContainer: InfluxDBContainer<*>
     val influxDBClient: InfluxDBClient
 
     val bucket: String
-        get() = influxDB.bucket
+        get() = influxDBContainer.bucket
 
     fun createInfluxDBClient() = InfluxDBClientFactory
-        .create(influxDB.url, influxDB.adminToken.get().toCharArray(), "test", "test-bucket")
+        .create(influxDBContainer.url, influxDBContainer.adminToken.get().toCharArray(), "test", "test-bucket")
 
     fun getDataSourceProperties() = InfluxDBDataSourceProperties(
-        influxDB.url,
-        influxDB.bucket,
-        influxDB.organization,
-        influxDB.adminToken.get()
+        influxDBContainer.url,
+        influxDBContainer.bucket,
+        influxDBContainer.organization,
+        influxDBContainer.adminToken.get()
     )
 
-    suspend fun getRecords(): List<FluxRecord> {
+    suspend fun getRecords(): List<FluxRecord> { // todo: make this extension function and remove influxDBClient field
         var attemptsLeft = 20
         var previousSize = -1
         var sizeOccurrences = 0

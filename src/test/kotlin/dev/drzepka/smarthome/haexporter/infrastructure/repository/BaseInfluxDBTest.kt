@@ -12,6 +12,6 @@ import org.testcontainers.junit.jupiter.Testcontainers
 abstract class BaseInfluxDBTest : InfluxDBTrait {
 
     @Container
-    override val influxDB: InfluxDBContainer<*> = createInfluxDBContainer()
+    override val influxDBContainer: InfluxDBContainer<*> = createInfluxDBContainer()
     override val influxDBClient by lazy { createInfluxDBClient() }
 }
