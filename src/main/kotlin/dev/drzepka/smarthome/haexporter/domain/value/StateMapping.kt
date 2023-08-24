@@ -1,5 +1,7 @@
 package dev.drzepka.smarthome.haexporter.domain.value
 
+class StateMappings(private val mappings: List<StateMapping>) : List<StateMapping> by mappings
+
 data class StateMapping(
     val name: String,
     val mappings: List<ValueMapping>,

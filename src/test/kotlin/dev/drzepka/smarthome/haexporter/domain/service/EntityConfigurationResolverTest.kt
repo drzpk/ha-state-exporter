@@ -1,6 +1,7 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
 import dev.drzepka.smarthome.haexporter.application.DuplicatedEntitySelectorsException
+import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
 import dev.drzepka.smarthome.haexporter.domain.value.ANY_VALUE
 import dev.drzepka.smarthome.haexporter.domain.value.ElementalEntitySelector
@@ -24,7 +25,7 @@ internal class EntityConfigurationResolverTest {
             EntityProperties(EntitySelector("class5", "dev5", ANY_VALUE), "schema5")
         )
 
-        val resolver = EntityConfigurationResolver(properties)
+        val resolver = EntityConfigurationResolver(EntitiesProperties(properties))
 
         then(resolver.resolve(EntityId("class1", "dev1", "sensor"))).matches { it?.schema == "schema1" }
         then(resolver.resolve(EntityId("any-class", "dev2", "sensor"))).matches { it?.schema == "schema2" }
@@ -46,7 +47,7 @@ internal class EntityConfigurationResolverTest {
             EntityProperties(EntitySelector(ANY_VALUE, "dev1", ANY_VALUE), "schema4")
         )
 
-        val resolver = EntityConfigurationResolver(properties)
+        val resolver = EntityConfigurationResolver(EntitiesProperties(properties))
 
         then(resolver.resolve(EntityId("class1", "dev1", "sensor"))).matches { it?.schema == "schema1" }
         then(resolver.resolve(EntityId("class2", "dev1", "sensor"))).matches { it?.schema == "schema2" }
@@ -61,7 +62,7 @@ internal class EntityConfigurationResolverTest {
             EntityProperties(EntitySelector(listOf("class2", "class3"), "dev1", listOf("sensor3")), "schema2")
         )
 
-        val resolver = EntityConfigurationResolver(properties)
+        val resolver = EntityConfigurationResolver(EntitiesProperties(properties))
 
         then(resolver.resolve(EntityId("class1", "dev1", "sensor1"))).matches { it?.schema == "schema1" }
         then(resolver.resolve(EntityId("class1", "dev1", "sensor2"))).matches { it?.schema == "schema1" }
@@ -77,7 +78,7 @@ internal class EntityConfigurationResolverTest {
         val properties = listOf(*source.second.toTypedArray())
 
         val result = kotlin.runCatching {
-            EntityConfigurationResolver(properties)
+            EntityConfigurationResolver(EntitiesProperties(properties))
         }
 
         then(result.isFailure).isTrue

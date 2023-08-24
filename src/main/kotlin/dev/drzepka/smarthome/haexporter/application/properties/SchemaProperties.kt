@@ -1,5 +1,7 @@
 package dev.drzepka.smarthome.haexporter.application.properties
 
+class SchemasProperties(private val properties: List<SchemaProperties>) : List<SchemaProperties> by properties
+
 data class SchemaProperties(
     val name: String,
     val influxMeasurementName: String,

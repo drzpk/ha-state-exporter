@@ -3,6 +3,7 @@ package dev.drzepka.smarthome.haexporter.application.service
 import dev.drzepka.smarthome.haexporter.application.model.SourceState
 import dev.drzepka.smarthome.haexporter.application.properties.EntitySchema
 import dev.drzepka.smarthome.haexporter.application.properties.SchemaProperties
+import dev.drzepka.smarthome.haexporter.application.properties.SchemasProperties
 import dev.drzepka.smarthome.haexporter.application.properties.ValueType
 import dev.drzepka.smarthome.haexporter.domain.entity.State
 import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
@@ -23,7 +24,7 @@ class StatePipeline(
     private val entityConfigurationResolver: EntityConfigurationResolver,
     private val stateMapper: StateMapper,
     private val stateValueConverter: StateValueConverter,
-    private val schemas: List<SchemaProperties>,
+    private val schemas: SchemasProperties,
     private val stateRepository: StateRepository
 ) {
 

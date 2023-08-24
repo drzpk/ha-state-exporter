@@ -6,12 +6,12 @@ import dev.drzepka.smarthome.haexporter.application.configuration.influxDBModule
 import dev.drzepka.smarthome.haexporter.application.configuration.mariaDBModule
 import dev.drzepka.smarthome.haexporter.application.model.EntityMetadata
 import dev.drzepka.smarthome.haexporter.application.properties.EntitySchema
-import dev.drzepka.smarthome.haexporter.application.properties.RootProperties
 import dev.drzepka.smarthome.haexporter.application.properties.SchemaProperties
+import dev.drzepka.smarthome.haexporter.application.properties.SchemasProperties
 import dev.drzepka.smarthome.haexporter.application.properties.ValueType
-import dev.drzepka.smarthome.haexporter.application.provider.ConfigurationPropertiesProvider
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantEntityMetadataProvider
 import dev.drzepka.smarthome.haexporter.domain.entity.State
+import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
 import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
 import dev.drzepka.smarthome.haexporter.domain.util.trimToSeconds
@@ -20,10 +20,9 @@ import dev.drzepka.smarthome.haexporter.domain.value.EntitySelector
 import dev.drzepka.smarthome.haexporter.domain.value.NumericStateValue
 import dev.drzepka.smarthome.haexporter.infrastructure.database.InfluxDBClientProvider
 import dev.drzepka.smarthome.haexporter.infrastructure.database.SQLConnectionProvider
-import dev.drzepka.smarthome.haexporter.infrastructure.properties.InfluxDBDataSourceProperties
-import dev.drzepka.smarthome.haexporter.infrastructure.provider.DirectConfigurationProvider
 import dev.drzepka.smarthome.haexporter.trait.InfluxDBTrait
 import dev.drzepka.smarthome.haexporter.trait.InfluxDBTrait.Companion.createInfluxDBContainer
+import dev.drzepka.smarthome.haexporter.trait.KoinTrait
 import dev.drzepka.smarthome.haexporter.trait.MariaDBTrait
 import dev.drzepka.smarthome.haexporter.trait.MariaDBTrait.Companion.createMariaDBContainer
 import io.mockk.coEvery
@@ -49,7 +48,7 @@ import java.time.Instant
 
 @Testcontainers
 @ExtendWith(MockKExtension::class)
-internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTest {
+internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, KoinTest {
 
     @Container
     override val mariaDBContainer: MariaDBContainer<*> = createMariaDBContainer()
@@ -60,29 +59,24 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTest {
     override val influxDBClient by lazy { createInfluxDBClient() }
     private lateinit var connectionProvider: SQLConnectionProvider
 
-    private val properties by lazy {
-        RootProperties(
-            homeAssistant = getMariaDBDataSourceProperties(),
-            influxDB = InfluxDBDataSourceProperties("", "", "", ""),
+    private val entityProperties = listOf(
+        EntityProperties(EntitySelector(device = "temperature"), "temperature"),
+        EntityProperties(EntitySelector(`class` = "binary_sensor", device = "door", sensor = "state"), "door")
+    )
+
+    private val schemaProperties = listOf(
+        SchemaProperties(
+            "temperature",
+            "temp"
+        ),
+        SchemaProperties(
+            "door",
+            "doors",
             entities = listOf(
-                EntityProperties(EntitySelector(device = "temperature"), "temperature"),
-                EntityProperties(EntitySelector(`class` = "binary_sensor", device = "door", sensor = "state"), "door")
-            ),
-            schemas = listOf(
-                SchemaProperties(
-                    "temperature",
-                    "temp"
-                ),
-                SchemaProperties(
-                    "door",
-                    "doors",
-                    entities = listOf(
-                        EntitySchema("state", type = ValueType.STRING)
-                    )
-                )
+                EntitySchema("state", type = ValueType.STRING)
             )
         )
-    }
+    )
 
     private val metadataProvider = mockk<HomeAssistantEntityMetadataProvider>()
 
@@ -101,10 +95,11 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTest {
                 single { connectionProvider }
                 single { metadataProvider }
                 single { InfluxDBClientProvider(getDataSourceProperties()) }
-                single<ConfigurationPropertiesProvider> { DirectConfigurationProvider(properties) }
+                single { EntitiesProperties(entityProperties) }
+                single { SchemasProperties(schemaProperties) }
             }
 
-            modules(mariaDBModule, influxDBModule, domainModule, applicationModule, testModule)
+            modules(mariaDBModule, influxDBModule, domainModule, applicationModule, defaultConfigurationModule, testModule)
         }
     }
 

@@ -5,10 +5,10 @@ import dev.drzepka.smarthome.haexporter.application.configuration.domainModule
 import dev.drzepka.smarthome.haexporter.application.configuration.influxDBModule
 import dev.drzepka.smarthome.haexporter.application.model.SourceState
 import dev.drzepka.smarthome.haexporter.application.properties.EntitySchema
-import dev.drzepka.smarthome.haexporter.application.properties.RootProperties
 import dev.drzepka.smarthome.haexporter.application.properties.SchemaProperties
+import dev.drzepka.smarthome.haexporter.application.properties.SchemasProperties
 import dev.drzepka.smarthome.haexporter.application.properties.ValueType
-import dev.drzepka.smarthome.haexporter.application.provider.ConfigurationPropertiesProvider
+import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
 import dev.drzepka.smarthome.haexporter.domain.service.StateValueConverter
 import dev.drzepka.smarthome.haexporter.domain.util.trimToSeconds
@@ -16,10 +16,10 @@ import dev.drzepka.smarthome.haexporter.domain.value.DefaultValueMapping
 import dev.drzepka.smarthome.haexporter.domain.value.EntitySelector
 import dev.drzepka.smarthome.haexporter.domain.value.StateMapping
 import dev.drzepka.smarthome.haexporter.domain.value.StateMappingTargetType
+import dev.drzepka.smarthome.haexporter.domain.value.StateMappings
 import dev.drzepka.smarthome.haexporter.domain.value.ValueMapping
-import dev.drzepka.smarthome.haexporter.infrastructure.properties.SQLDataSourceProperties
-import dev.drzepka.smarthome.haexporter.infrastructure.provider.DirectConfigurationProvider
 import dev.drzepka.smarthome.haexporter.infrastructure.repository.BaseInfluxDBTest
+import dev.drzepka.smarthome.haexporter.trait.KoinTrait
 import io.mockk.every
 import io.mockk.junit5.MockKExtension
 import io.mockk.spyk
@@ -40,42 +40,38 @@ import java.time.Duration
 import java.time.Instant
 
 @ExtendWith(MockKExtension::class)
-internal class StatePipelineTest : BaseInfluxDBTest(), KoinTest {
+internal class StatePipelineTest : BaseInfluxDBTest(), KoinTrait, KoinTest {
 
-    private val properties by lazy {
-        RootProperties(
-            homeAssistant = SQLDataSourceProperties("", "", 123, "", "", ""),
-            influxDB = getDataSourceProperties(),
-            entities = listOf(
-                EntityProperties(EntitySelector(device = "outside"), "outside_sensor_schema"),
-                EntityProperties(EntitySelector(device = "energy"), "energy"),
-            ),
-            schemas = listOf(
-                SchemaProperties(
-                    "outside_sensor_schema",
-                    "outside_data",
-                    listOf(
-                        EntitySchema("temperature_str", type = ValueType.STRING),
-                        EntitySchema("temperature", type = ValueType.AUTO)
-                    )
-                ),
-                SchemaProperties(
-                    "energy",
-                    "energy",
-                    listOf(
-                        EntitySchema("availability", type = ValueType.STRING, stateMapping = "availability")
-                    )
-                )
-            ),
-            stateMappings = listOf(
-                StateMapping(
-                    "availability",
-                    listOf(ValueMapping("on", true, StateMappingTargetType.BOOL)),
-                    DefaultValueMapping(false, StateMappingTargetType.BOOL)
-                )
+    private val entityProperties = listOf(
+        EntityProperties(EntitySelector(device = "outside"), "outside_sensor_schema"),
+        EntityProperties(EntitySelector(device = "energy"), "energy"),
+    )
+
+    private val schemaProperties = listOf(
+        SchemaProperties(
+            "outside_sensor_schema",
+            "outside_data",
+            listOf(
+                EntitySchema("temperature_str", type = ValueType.STRING),
+                EntitySchema("temperature", type = ValueType.AUTO)
+            )
+        ),
+        SchemaProperties(
+            "energy",
+            "energy",
+            listOf(
+                EntitySchema("availability", type = ValueType.STRING, stateMapping = "availability")
             )
         )
-    }
+    )
+
+    private val stateMappings = listOf(
+        StateMapping(
+            "availability",
+            listOf(ValueMapping("on", true, StateMappingTargetType.BOOL)),
+            DefaultValueMapping(false, StateMappingTargetType.BOOL)
+        )
+    )
 
     private val stateValueConverter = spyk(StateValueConverter())
 
@@ -85,11 +81,14 @@ internal class StatePipelineTest : BaseInfluxDBTest(), KoinTest {
     fun beforeEach() {
         startKoin {
             val testModule = module {
-                single<ConfigurationPropertiesProvider> { DirectConfigurationProvider(properties) }
+                single { EntitiesProperties(entityProperties) }
+                single { SchemasProperties(schemaProperties) }
+                single { StateMappings(stateMappings) }
                 single { stateValueConverter }
+                single { getDataSourceProperties() }
             }
 
-            modules(influxDBModule, domainModule, applicationModule, testModule)
+            modules(influxDBModule, domainModule, applicationModule, defaultConfigurationModule, testModule)
         }
     }
 

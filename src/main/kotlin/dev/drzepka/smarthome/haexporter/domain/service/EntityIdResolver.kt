@@ -1,10 +1,10 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
-import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
+import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.value.EntityId
 import org.apache.logging.log4j.kotlin.Logging
 
-class EntityIdResolver(entitiesProperties: List<EntityProperties>) {
+class EntityIdResolver(entitiesProperties: EntitiesProperties) {
     private val knownDevices = entitiesProperties.map { it.selector.device }.toSet()
 
     fun resolve(value: String): EntityId? {

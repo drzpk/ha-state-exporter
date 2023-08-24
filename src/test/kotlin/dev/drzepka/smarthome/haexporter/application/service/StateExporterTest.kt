@@ -5,6 +5,7 @@ import dev.drzepka.smarthome.haexporter.application.model.SourceState
 import dev.drzepka.smarthome.haexporter.application.properties.ExporterProperties
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantEntityMetadataProvider
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantStateProvider
+import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
 import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
 import dev.drzepka.smarthome.haexporter.domain.service.EntityIdResolver
@@ -42,7 +43,7 @@ internal class StateExporterTest {
         stateRepository,
         metadataProvider,
         ExporterProperties(batchSize = 500),
-        EntityIdResolver(entitiesProperties),
+        EntityIdResolver(EntitiesProperties(entitiesProperties)),
         stateProvider,
         statePipeline
     )

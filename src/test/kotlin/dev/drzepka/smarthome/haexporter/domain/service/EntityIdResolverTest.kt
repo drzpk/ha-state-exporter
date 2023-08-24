@@ -1,8 +1,9 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
-import dev.drzepka.smarthome.haexporter.domain.value.EntitySelector
+import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
 import dev.drzepka.smarthome.haexporter.domain.value.EntityId
+import dev.drzepka.smarthome.haexporter.domain.value.EntitySelector
 import org.assertj.core.api.BDDAssertions.then
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -15,7 +16,7 @@ class EntityIdResolverTest {
         EntityProperties(EntitySelector(device = "kitchen_light"), "mapping2")
     )
 
-    private val resolver = EntityIdResolver(properties)
+    private val resolver = EntityIdResolver(EntitiesProperties(properties))
 
     @ParameterizedTest
     @ValueSource(strings = ["l1", "l1_l3"])
