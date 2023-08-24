@@ -1,12 +1,11 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
 import dev.drzepka.smarthome.haexporter.application.DuplicatedEntitySelectorsException
-import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
 import dev.drzepka.smarthome.haexporter.domain.value.EntityConfiguration
 import dev.drzepka.smarthome.haexporter.domain.value.EntityId
 
-class EntityConfigurationResolver(private val properties: EntitiesProperties) {
+class EntityConfigurationResolver(private val properties: List<EntityProperties>) {
     init {
         detectDuplicates()
     }
@@ -17,7 +16,7 @@ class EntityConfigurationResolver(private val properties: EntitiesProperties) {
 
     private fun EntityProperties.toConfiguration(entityId: EntityId) = EntityConfiguration(
         entityId,
-        this.mapping
+        this.schema
     )
 
     private fun detectDuplicates() {

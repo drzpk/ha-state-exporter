@@ -12,5 +12,8 @@
         <Logger name="dev.drzepka.smarthome.haexporter" level="DEBUG" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
+        <Logger name="dev.drzepka.smarthome.haexporter.application.service" level="TRACE" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
     </Loggers>
 </Configuration>

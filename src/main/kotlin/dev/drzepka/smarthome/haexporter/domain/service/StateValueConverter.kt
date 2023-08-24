@@ -12,6 +12,9 @@ class StateValueConverter {
         this::convertToIntOrLong
     )
 
+    // For now, it's the same
+    fun convertToNumber(value: String): StateValue? = convert(value)
+
     fun convert(value: String): StateValue? {
         for (converter in conversionOrder) {
             val result = converter.invoke(value)

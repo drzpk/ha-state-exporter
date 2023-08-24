@@ -1,0 +1,39 @@
+home_assistant:
+  driver: org.mariadb.jdbc.Driver
+  host: localhost
+  port: 3306
+  username: user
+  password: pass
+  database: homeassistant
+
+influxdb:
+  url: influx_url
+  bucket: bucket_name
+  org: default
+  token: xyz
+
+entities:
+  - selector:
+      device: test_device
+      sensors:
+        - sensor1
+        - sensor2
+    schema: energy
+
+schemas:
+  - name: schema_name
+    influx_measurement_name: measurement_name
+    entities:
+      - sensor: entity_sensor
+        type: AUTO
+        state_mapping: state_mapping
+        ignored_values:
+          - ignored_value
+
+state_mappings:
+  - name: binary_sensor
+    mappings:
+      - from: 'off'
+        to: false
+        to_type: BOOL
+    default_mapping: null

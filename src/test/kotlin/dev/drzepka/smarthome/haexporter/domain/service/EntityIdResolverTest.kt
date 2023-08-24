@@ -1,7 +1,6 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
 import dev.drzepka.smarthome.haexporter.domain.value.EntitySelector
-import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
 import dev.drzepka.smarthome.haexporter.domain.value.EntityId
 import org.assertj.core.api.BDDAssertions.then
@@ -11,10 +10,10 @@ import org.junit.jupiter.params.provider.ValueSource
 
 class EntityIdResolverTest {
 
-    private val properties = EntitiesProperties().apply {
-        add(EntityProperties(EntitySelector(device = "living_room"), "mapping1"))
-        add(EntityProperties(EntitySelector(device = "kitchen_light"), "mapping2"))
-    }
+    private val properties = listOf(
+        EntityProperties(EntitySelector(device = "living_room"), "mapping1"),
+        EntityProperties(EntitySelector(device = "kitchen_light"), "mapping2")
+    )
 
     private val resolver = EntityIdResolver(properties)
 

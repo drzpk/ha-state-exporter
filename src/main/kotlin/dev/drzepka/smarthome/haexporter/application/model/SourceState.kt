@@ -7,4 +7,7 @@ data class SourceState(
     val entityId: String,
     val state: String,
     val lastUpdated: Instant
-)
+) : TimeData {
+    override val time: Instant
+        get() = lastUpdated
+}

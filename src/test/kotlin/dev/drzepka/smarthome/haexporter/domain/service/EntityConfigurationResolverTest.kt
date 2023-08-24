@@ -1,7 +1,6 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
 import dev.drzepka.smarthome.haexporter.application.DuplicatedEntitySelectorsException
-import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
 import dev.drzepka.smarthome.haexporter.domain.value.ANY_VALUE
 import dev.drzepka.smarthome.haexporter.domain.value.ElementalEntitySelector
@@ -17,21 +16,21 @@ internal class EntityConfigurationResolverTest {
 
     @Test
     fun `should resolve configuration for existing entity`() {
-        val properties = EntitiesProperties(
-            EntityProperties(EntitySelector("class1", "dev1", "sensor"), "mapping1"),
-            EntityProperties(EntitySelector(ANY_VALUE, "dev2", "sensor"), "mapping2"),
-            EntityProperties(EntitySelector("class3", "dev3", ANY_VALUE), "mapping3"),
-            EntityProperties(EntitySelector(ANY_VALUE, "dev4", ANY_VALUE), "mapping4"),
-            EntityProperties(EntitySelector("class5", "dev5", ANY_VALUE), "mapping5")
+        val properties = listOf(
+            EntityProperties(EntitySelector("class1", "dev1", "sensor"), "schema1"),
+            EntityProperties(EntitySelector(ANY_VALUE, "dev2", "sensor"), "schema2"),
+            EntityProperties(EntitySelector("class3", "dev3", ANY_VALUE), "schema3"),
+            EntityProperties(EntitySelector(ANY_VALUE, "dev4", ANY_VALUE), "schema4"),
+            EntityProperties(EntitySelector("class5", "dev5", ANY_VALUE), "schema5")
         )
 
         val resolver = EntityConfigurationResolver(properties)
 
-        then(resolver.resolve(EntityId("class1", "dev1", "sensor"))).matches { it?.mapping == "mapping1" }
-        then(resolver.resolve(EntityId("any-class", "dev2", "sensor"))).matches { it?.mapping == "mapping2" }
-        then(resolver.resolve(EntityId("class3", "dev3", "any-sensor"))).matches { it?.mapping == "mapping3" }
-        then(resolver.resolve(EntityId("any-class", "dev4", "any-sensor"))).matches { it?.mapping == "mapping4" }
-        then(resolver.resolve(EntityId("class5", "dev5", "any-sensor"))).matches { it?.mapping == "mapping5" }
+        then(resolver.resolve(EntityId("class1", "dev1", "sensor"))).matches { it?.schema == "schema1" }
+        then(resolver.resolve(EntityId("any-class", "dev2", "sensor"))).matches { it?.schema == "schema2" }
+        then(resolver.resolve(EntityId("class3", "dev3", "any-sensor"))).matches { it?.schema == "schema3" }
+        then(resolver.resolve(EntityId("any-class", "dev4", "any-sensor"))).matches { it?.schema == "schema4" }
+        then(resolver.resolve(EntityId("class5", "dev5", "any-sensor"))).matches { it?.schema == "schema5" }
 
         then(resolver.resolve(EntityId("class1", "dev1", "sensor00"))).isNull()
         then(resolver.resolve(EntityId("class1", "dev1xx", "sensor"))).isNull()
@@ -40,34 +39,34 @@ internal class EntityConfigurationResolverTest {
 
     @Test
     fun `should resolve first matching entity configuration`() {
-        val properties = EntitiesProperties(
-            EntityProperties(EntitySelector("class1", "dev1", "sensor"), "mapping1"),
-            EntityProperties(EntitySelector("class2", "dev1", "sensor"), "mapping2"),
-            EntityProperties(EntitySelector("class1", "dev1", ANY_VALUE), "mapping3"),
-            EntityProperties(EntitySelector(ANY_VALUE, "dev1", ANY_VALUE), "mapping4")
+        val properties = listOf(
+            EntityProperties(EntitySelector("class1", "dev1", "sensor"), "schema1"),
+            EntityProperties(EntitySelector("class2", "dev1", "sensor"), "schema2"),
+            EntityProperties(EntitySelector("class1", "dev1", ANY_VALUE), "schema3"),
+            EntityProperties(EntitySelector(ANY_VALUE, "dev1", ANY_VALUE), "schema4")
         )
 
         val resolver = EntityConfigurationResolver(properties)
 
-        then(resolver.resolve(EntityId("class1", "dev1", "sensor"))).matches { it?.mapping == "mapping1" }
-        then(resolver.resolve(EntityId("class2", "dev1", "sensor"))).matches { it?.mapping == "mapping2" }
-        then(resolver.resolve(EntityId("class1", "dev1", "another"))).matches { it?.mapping == "mapping3" }
-        then(resolver.resolve(EntityId("unknown", "dev1", "another"))).matches { it?.mapping == "mapping4" }
+        then(resolver.resolve(EntityId("class1", "dev1", "sensor"))).matches { it?.schema == "schema1" }
+        then(resolver.resolve(EntityId("class2", "dev1", "sensor"))).matches { it?.schema == "schema2" }
+        then(resolver.resolve(EntityId("class1", "dev1", "another"))).matches { it?.schema == "schema3" }
+        then(resolver.resolve(EntityId("unknown", "dev1", "another"))).matches { it?.schema == "schema4" }
     }
 
     @Test
     fun `should resolve configuration with multiple values in selector`() {
-        val properties = EntitiesProperties(
-            EntityProperties(EntitySelector(listOf("class1"), "dev1", listOf("sensor1", "sensor2")), "mapping1"),
-            EntityProperties(EntitySelector(listOf("class2", "class3"), "dev1", listOf("sensor3")), "mapping2")
+        val properties = listOf(
+            EntityProperties(EntitySelector(listOf("class1"), "dev1", listOf("sensor1", "sensor2")), "schema1"),
+            EntityProperties(EntitySelector(listOf("class2", "class3"), "dev1", listOf("sensor3")), "schema2")
         )
 
         val resolver = EntityConfigurationResolver(properties)
 
-        then(resolver.resolve(EntityId("class1", "dev1", "sensor1"))).matches { it?.mapping == "mapping1" }
-        then(resolver.resolve(EntityId("class1", "dev1", "sensor2"))).matches { it?.mapping == "mapping1" }
-        then(resolver.resolve(EntityId("class2", "dev1", "sensor3"))).matches { it?.mapping == "mapping2" }
-        then(resolver.resolve(EntityId("class3", "dev1", "sensor3"))).matches { it?.mapping == "mapping2" }
+        then(resolver.resolve(EntityId("class1", "dev1", "sensor1"))).matches { it?.schema == "schema1" }
+        then(resolver.resolve(EntityId("class1", "dev1", "sensor2"))).matches { it?.schema == "schema1" }
+        then(resolver.resolve(EntityId("class2", "dev1", "sensor3"))).matches { it?.schema == "schema2" }
+        then(resolver.resolve(EntityId("class3", "dev1", "sensor3"))).matches { it?.schema == "schema2" }
         then(resolver.resolve(EntityId("class1", "dev1", "sensor3"))).isNull()
         then(resolver.resolve(EntityId("class2", "dev1", "sensor4"))).isNull()
     }
@@ -75,7 +74,7 @@ internal class EntityConfigurationResolverTest {
     @ParameterizedTest
     @MethodSource("getEntityPropertiesWithDuplicates")
     fun `should throw exception on duplicated properties`(source: Pair<ElementalEntitySelector, List<EntityProperties>>) {
-        val properties = EntitiesProperties(*source.second.toTypedArray())
+        val properties = listOf(*source.second.toTypedArray())
 
         val result = kotlin.runCatching {
             EntityConfigurationResolver(properties)

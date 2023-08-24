@@ -69,6 +69,16 @@ interface InfluxDBTrait {
         }
     }
 
+    fun Iterable<FluxRecord>.assertNotContains(
+        time: Instant,
+        measurement: String,
+        field: String
+    ) {
+        val record = this.firstOrNull { it.time == time && it.measurement == measurement && it.field == field }
+        if (record != null)
+            fail("Found a record that shouldn't exist at time=$time with measurement=$measurement and field=$field")
+    }
+
     companion object {
         fun createInfluxDBContainer(): InfluxDBContainer<*> = InfluxDBContainer(DockerImageName.parse("influxdb:2.7.1"))
             .withAdminToken("admin-token")
