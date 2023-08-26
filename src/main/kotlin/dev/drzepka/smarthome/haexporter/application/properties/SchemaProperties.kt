@@ -1,5 +1,6 @@
 package dev.drzepka.smarthome.haexporter.application.properties
 
+import dev.drzepka.smarthome.haexporter.domain.util.MultiValueMatcher
 import dev.drzepka.smarthome.haexporter.domain.value.ValueType
 
 class SchemasProperties(private val properties: List<SchemaProperties>) : List<SchemaProperties> by properties
@@ -21,13 +22,15 @@ data class SchemaProperties(
     }
 }
 
-data class EntitySchema(
+class EntitySchema(
     val sensor: String? = null,
     val type: ValueType = ValueType.STRING,
     val stateMapping: String? = null,
     val ignoreUnmappedState: Boolean = true,
-    val ignoredValues: List<String> = emptyList(), // todo: implement this feature
+    ignoredValues: List<String> = emptyList(),
 ) {
+    val ignoredValues = MultiValueMatcher(ignoredValues)
+
     companion object {
         val DEFAULT = EntitySchema(sensor = ANY_SENSOR)
     }

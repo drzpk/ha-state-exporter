@@ -67,6 +67,11 @@ class StatePipeline(
     }
 
     private fun processState(input: String, schema: EntitySchema): StateValue? {
+        if (schema.ignoredValues.matches(input)) {
+            logger.trace { "Value '$input' is ignored for sensor ${schema.sensor}" }
+            return null
+        }
+
         var value = if (schema.stateMapping != null) {
             val result = stateMapper.mapState(schema.stateMapping, input)
             logger.trace { "Used mapping ${schema.stateMapping} to map value '$input' to $result" }

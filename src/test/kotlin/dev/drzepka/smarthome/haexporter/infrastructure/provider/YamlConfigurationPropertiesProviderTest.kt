@@ -28,7 +28,7 @@ class YamlConfigurationPropertiesProviderTest {
                 then(sensor).isEqualTo("entity_sensor")
                 then(type).isEqualTo(ValueType.INTEGER)
                 then(stateMapping).isEqualTo("state_mapping")
-                then(ignoredValues).containsExactly("ignored_value")
+                then(ignoredValues.matches("ignored_value")).isTrue
             }
         }
 

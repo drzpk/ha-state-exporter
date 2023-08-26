@@ -52,7 +52,7 @@ internal class StatePipelineTest : BaseInfluxDBTest(), KoinTrait, KoinTest {
             "outside_data",
             listOf(
                 EntitySchema("temperature_str", type = ValueType.STRING),
-                EntitySchema("temperature", type = ValueType.FLOAT)
+                EntitySchema("temperature", type = ValueType.FLOAT, ignoredValues = listOf("5.0"))
             )
         ),
         SchemaProperties(
@@ -103,21 +103,23 @@ internal class StatePipelineTest : BaseInfluxDBTest(), KoinTrait, KoinTest {
         val states = listOf(
             SourceState(1, "sensor.outside_temperature_str", "32.12", time + Duration.ofSeconds(1)),
             SourceState(2, "sensor.outside_temperature", "25.4", time + Duration.ofSeconds(2)),
-            SourceState(3, "sensor.energy_availability", "on", time + Duration.ofSeconds(3)),
-            SourceState(4, "sensor.energy_availability", "off", time + Duration.ofSeconds(4)),
-            SourceState(5, "sensor.energy_availability", "unknown", time + Duration.ofSeconds(5)),
+            SourceState(3, "sensor.outside_temperature", "5.0", time + Duration.ofSeconds(3)),
+            SourceState(4, "sensor.energy_availability", "on", time + Duration.ofSeconds(4)),
+            SourceState(5, "sensor.energy_availability", "off", time + Duration.ofSeconds(5)),
+            SourceState(6, "sensor.energy_availability", "unknown", time + Duration.ofSeconds(6)),
         )
 
         statePipeline.execute(states.asFlow())
 
+        delay(3000)
         val records = getRecords()
         then(records).hasSize(5)
 
         records.assertContains(time + Duration.ofSeconds(1), "outside_data", "temperature_str", "32.12", mapOf("device" to "outside"))
         records.assertContains(time + Duration.ofSeconds(2), "outside_data", "temperature", 25.4, mapOf("device" to "outside"))
-        records.assertContains(time + Duration.ofSeconds(3), "energy", "availability", true, mapOf("device" to "energy"))
-        records.assertContains(time + Duration.ofSeconds(4), "energy", "availability", false, mapOf("device" to "energy"))
+        records.assertContains(time + Duration.ofSeconds(4), "energy", "availability", true, mapOf("device" to "energy"))
         records.assertContains(time + Duration.ofSeconds(5), "energy", "availability", false, mapOf("device" to "energy"))
+        records.assertContains(time + Duration.ofSeconds(6), "energy", "availability", false, mapOf("device" to "energy"))
     }
 
     @Test
