@@ -1,5 +1,7 @@
 package dev.drzepka.smarthome.haexporter.application.properties
 
+import dev.drzepka.smarthome.haexporter.domain.value.ValueType
+
 class SchemasProperties(private val properties: List<SchemaProperties>) : List<SchemaProperties> by properties
 
 data class SchemaProperties(
@@ -21,17 +23,14 @@ data class SchemaProperties(
 
 data class EntitySchema(
     val sensor: String? = null,
-    val type: ValueType = ValueType.AUTO,
+    val type: ValueType = ValueType.STRING,
     val stateMapping: String? = null,
-    val ignoredValues: List<String> = emptyList()
+    val ignoreUnmappedState: Boolean = true,
+    val ignoredValues: List<String> = emptyList(), // todo: implement this feature
 ) {
     companion object {
-        val DEFAULT = EntitySchema(ANY_SENSOR, type = ValueType.AUTO, null, emptyList())
+        val DEFAULT = EntitySchema(sensor = ANY_SENSOR)
     }
 }
 
 const val ANY_SENSOR = "*"
-
-enum class ValueType {
-    NUMBER, STRING, AUTO
-}

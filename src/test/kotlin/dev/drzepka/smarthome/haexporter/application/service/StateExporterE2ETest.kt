@@ -8,16 +8,16 @@ import dev.drzepka.smarthome.haexporter.application.model.EntityMetadata
 import dev.drzepka.smarthome.haexporter.application.properties.EntitySchema
 import dev.drzepka.smarthome.haexporter.application.properties.SchemaProperties
 import dev.drzepka.smarthome.haexporter.application.properties.SchemasProperties
-import dev.drzepka.smarthome.haexporter.application.properties.ValueType
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantEntityMetadataProvider
 import dev.drzepka.smarthome.haexporter.domain.entity.State
 import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
 import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
 import dev.drzepka.smarthome.haexporter.domain.util.trimToSeconds
+import dev.drzepka.smarthome.haexporter.domain.value.DoubleStateValue
 import dev.drzepka.smarthome.haexporter.domain.value.EntityId
 import dev.drzepka.smarthome.haexporter.domain.value.EntitySelector
-import dev.drzepka.smarthome.haexporter.domain.value.NumericStateValue
+import dev.drzepka.smarthome.haexporter.domain.value.ValueType
 import dev.drzepka.smarthome.haexporter.infrastructure.database.InfluxDBClientProvider
 import dev.drzepka.smarthome.haexporter.infrastructure.database.SQLConnectionProvider
 import dev.drzepka.smarthome.haexporter.trait.InfluxDBTrait
@@ -67,7 +67,11 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
     private val schemaProperties = listOf(
         SchemaProperties(
             "temperature",
-            "temp"
+            "temp",
+            entities = listOf(
+                EntitySchema("inside", type = ValueType.FLOAT),
+                EntitySchema("outside", type = ValueType.FLOAT)
+            )
         ),
         SchemaProperties(
             "door",
@@ -135,7 +139,7 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
         records.assertContains(time.plusSeconds(1), "temp", "inside", 21.33, tags("temperature", "inside"))
         records.assertContains(time.plusSeconds(2), "temp", "inside", 22.04, tags("temperature", "inside"))
         records.assertContains(time.plusSeconds(3), "temp", "outside", 24.43, tags("temperature", "outside"))
-        records.assertContains(time.plusSeconds(4), "temp", "value", 25.92, tags("temperature", null))
+        records.assertContains(time.plusSeconds(4), "temp", "value", "25.92", tags("temperature", null))
     }
 
     @Test
@@ -143,8 +147,8 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
         val time = Instant.now().trimToSeconds().minusSeconds(100)
 
         val preExistingStates = listOf(
-            State(time.plusSeconds(10), EntityId("sensor", "temperature", "inside"), "temp", NumericStateValue(23.1)),
-            State(time.plusSeconds(10), EntityId("sensor", "temperature", "outside"), "temp", NumericStateValue(12.2))
+            State(time.plusSeconds(10), EntityId("sensor", "temperature", "inside"), "temp", DoubleStateValue(23.1)),
+            State(time.plusSeconds(10), EntityId("sensor", "temperature", "outside"), "temp", DoubleStateValue(12.2))
         )
         stateRepository.save(preExistingStates.asFlow())
 

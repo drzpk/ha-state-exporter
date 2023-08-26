@@ -20,11 +20,18 @@ class StringStateValue(override val value: String) : StateValue() {
     override fun asString(): String = stringValue
 }
 
-class NumericStateValue(override val value: Number) : StateValue() {
-    val numberValue: Number
+class LongStateValue(override val value: Long) : StateValue() {
+    val longValue: Number
         get() = value
 
-    override fun asString(): String = numberValue.toString()
+    override fun asString(): String = longValue.toString()
+}
+
+class DoubleStateValue(override val value: Double): StateValue() {
+    val doubleValue: Number
+        get() = value
+
+    override fun asString(): String = doubleValue.toString()
 }
 
 class BooleanStateValue(override val value: Boolean) : StateValue() {

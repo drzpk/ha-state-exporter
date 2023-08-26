@@ -25,15 +25,15 @@ schemas:
     influx_measurement_name: measurement_name
     entities:
       - sensor: entity_sensor
-        type: AUTO
+        type: INTEGER
         state_mapping: state_mapping
         ignored_values:
           - ignored_value
 
 state_mappings:
   - name: binary_sensor
+    target_type: BOOLEAN
     mappings:
       - from: 'off'
         to: false
-        to_type: BOOL
     default_mapping: null

@@ -21,12 +21,8 @@ import org.koin.dsl.module
 val domainModule = module {
     single { EntityConfigurationResolver(get()) }
     single { EntityIdResolver(get()) }
-    single {
-        val mappings = get<StateMappings>()
-        StateMapper().apply { mappings.forEach { registerMapping(it) } }
-    }
     single { StateValueConverter() }
-
+    single { StateMapper(get(), get()) }
 }
 
 val mariaDBModule = module {

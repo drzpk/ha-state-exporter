@@ -1,170 +1,82 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
 import dev.drzepka.smarthome.haexporter.domain.exception.MappingException
-import dev.drzepka.smarthome.haexporter.domain.value.*
-import org.assertj.core.api.BDDAssertions.catchException
+import dev.drzepka.smarthome.haexporter.domain.value.DefaultValueMapping
+import dev.drzepka.smarthome.haexporter.domain.value.LongStateValue
+import dev.drzepka.smarthome.haexporter.domain.value.StateMapping
+import dev.drzepka.smarthome.haexporter.domain.value.StateMappings
+import dev.drzepka.smarthome.haexporter.domain.value.ValueMapping
+import dev.drzepka.smarthome.haexporter.domain.value.ValueType
+import io.mockk.every
+import io.mockk.mockk
+import org.assertj.core.api.BDDAssertions.assertThatExceptionOfType
 import org.assertj.core.api.BDDAssertions.then
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.MethodSource
-import java.util.stream.Stream
 
 internal class StateMapperTest {
+    private val converter = mockk<StateValueConverter>()
 
     @Test
-    fun `should map state to STRING`() {
-        val mapping = StateMapping(
-            "string-mapping",
-            listOf(
-                ValueMapping("disabled", "off", StateMappingTargetType.STRING),
-                ValueMapping("enabled", "on", StateMappingTargetType.STRING),
-            ),
-            null
+    fun `should map state to target type`() {
+        val valueMappings = listOf(
+            ValueMapping("disabled", "0"),
+            ValueMapping("enabled", "1")
         )
-        val mapper = StateMapper().apply { registerMapping(mapping) }
 
-        val output1 = mapper.mapState("string-mapping", "enabled")
-        val output2 = mapper.mapState("string-mapping", "disabled")
+        every { converter.convert("0", ValueType.INTEGER) } returns LongStateValue(0L)
+        every { converter.convert("1", ValueType.INTEGER) } returns LongStateValue(1L)
 
-        then(output1).isEqualTo(StringStateValue("on"))
-        then(output2).isEqualTo(StringStateValue("off"))
-    }
+        val mapping = StateMapping("mapping_test", ValueType.INTEGER, valueMappings, null)
+        val mapper = StateMapper(converter, StateMappings(listOf(mapping)))
 
-    @Test
-    fun `should map state to NUMBER (integer)`() {
-        val mapping = StateMapping(
-            "int-mapping",
-            listOf(
-                ValueMapping("small", 1, StateMappingTargetType.NUMBER),
-                ValueMapping("medium", 2, StateMappingTargetType.NUMBER),
-                ValueMapping("large", 3, StateMappingTargetType.NUMBER),
-                ValueMapping("xl", "4", StateMappingTargetType.NUMBER),
-            ),
-            null
-        )
-        val mapper = StateMapper().apply { registerMapping(mapping) }
+        then(mapper.mapState("mapping_test", "disabled")).isEqualTo(LongStateValue(0L))
+        then(mapper.mapState("mapping_test", "enabled")).isEqualTo(LongStateValue(1L))
 
-        val output1 = mapper.mapState("int-mapping", "small")
-        val output2 = mapper.mapState("int-mapping", "medium")
-        val output3 = mapper.mapState("int-mapping", "large")
-        val output4 = mapper.mapState("int-mapping", "xl")
-
-        then(output1).isEqualTo(NumericStateValue(1))
-        then(output2).isEqualTo(NumericStateValue(2))
-        then(output3).isEqualTo(NumericStateValue(3))
-        then(output4).isEqualTo(NumericStateValue(4))
+        then(mapper.mapState("mapping_test", " enabled ")).isNull()
+        then(mapper.mapState("mapping_test", "something else")).isNull()
+        then(mapper.mapState("another mapping", "enabled")).isNull()
     }
 
     @Test
-    fun `should map state to NUMBER (long)`() {
-        val mapping = StateMapping(
-            "long-mapping",
-            listOf(
-                ValueMapping("small", Int.MAX_VALUE + 1L, StateMappingTargetType.NUMBER),
-                ValueMapping("medium", (Int.MIN_VALUE - 5L).toString(), StateMappingTargetType.NUMBER),
-            ),
-            null
+    fun `should use default mapping if none of the predefined mappings was matched`() {
+        val valueMappings = listOf(
+            ValueMapping("disabled", "0"),
+            ValueMapping("enabled", "1")
         )
-        val mapper = StateMapper().apply { registerMapping(mapping) }
+        val default = DefaultValueMapping("-1")
 
-        val output1 = mapper.mapState("long-mapping", "small")
-        val output2 = mapper.mapState("long-mapping", "medium")
+        every { converter.convert("0", ValueType.INTEGER) } returns LongStateValue(0L)
+        every { converter.convert("1", ValueType.INTEGER) } returns LongStateValue(1L)
+        every { converter.convert("-1", ValueType.INTEGER) } returns LongStateValue(-1L)
 
-        then(output1).isEqualTo(NumericStateValue(Int.MAX_VALUE + 1L))
-        then(output2).isEqualTo(NumericStateValue(Int.MIN_VALUE - 5L))
+        val mapping = StateMapping("mapping_test", ValueType.INTEGER, valueMappings, default)
+        val mapper = StateMapper(converter, StateMappings(listOf(mapping)))
+
+        then(mapper.mapState("mapping_test", "unknown value")).isEqualTo(LongStateValue(-1L))
+        then(mapper.mapState("abc", "unknown value")).isNull()
     }
 
     @Test
-    fun `should map state to NUMBER (double`() {
-        val mapping = StateMapping(
-            "double-mapping",
-            listOf(
-                ValueMapping("large", 3.0, StateMappingTargetType.NUMBER),
-                ValueMapping("xl", "4.123", StateMappingTargetType.NUMBER),
-            ),
-            null
+    fun `should throw exception if mappings are invalid`() {
+        val valueMappings = listOf(
+            ValueMapping("off", "0"),
+            ValueMapping("on", "invalid")
         )
-        val mapper = StateMapper().apply { registerMapping(mapping) }
+        val default = DefaultValueMapping("test")
 
-        val output1 = mapper.mapState("double-mapping", "large")
-        val output2 = mapper.mapState("double-mapping", "xl")
+        every { converter.convert(any(), ValueType.INTEGER) } returns null
+        every { converter.convert("0", ValueType.INTEGER) } returns LongStateValue(0L)
 
-        then(output1).isEqualTo(NumericStateValue(3.0))
-        then(output2).isEqualTo(NumericStateValue(4.123))
-    }
+        assertThatExceptionOfType(MappingException::class.java)
+            .isThrownBy {
+                StateMapper(converter, StateMappings(listOf(StateMapping("test", ValueType.INTEGER, valueMappings, null))))
+            }
+            .withMessageContaining("Value 'invalid' cannot be represented as type INTEGER")
 
-    @Test
-    fun `should map state to BOOL`() {
-        val mapping = StateMapping(
-            "bool-mapping",
-            listOf(
-                ValueMapping("off", false, StateMappingTargetType.BOOL),
-                ValueMapping("on", true, StateMappingTargetType.BOOL),
-                ValueMapping("enabled", 2, StateMappingTargetType.BOOL),
-            ),
-            null
-        )
-        val mapper = StateMapper().apply { registerMapping(mapping) }
-
-        val output1 = mapper.mapState("bool-mapping", "off")
-        val output2 = mapper.mapState("bool-mapping", "on")
-        val output3 = mapper.mapState("bool-mapping", "enabled")
-
-        then(output1).isEqualTo(BooleanStateValue(false))
-        then(output2).isEqualTo(BooleanStateValue(true))
-        then(output3).isEqualTo(BooleanStateValue(true))
-    }
-
-    @Test
-    fun `should use default mapping if none was matched`() {
-        val mapping = StateMapping(
-            "mapping",
-            listOf(
-                ValueMapping("disabled", 0, StateMappingTargetType.NUMBER),
-                ValueMapping("enabled", 1, StateMappingTargetType.NUMBER),
-            ),
-            DefaultValueMapping(-1, StateMappingTargetType.NUMBER)
-        )
-        val mapper = StateMapper().apply { registerMapping(mapping) }
-
-        val output = mapper.mapState("mapping", "unknown")
-        then(output).isEqualTo(NumericStateValue(-1))
-    }
-
-    @Test
-    fun `should return null when no mapping was matched and there is no default one`() {
-        val mapping = StateMapping(
-            "mapping",
-            listOf(
-                ValueMapping("disabled", 0, StateMappingTargetType.NUMBER),
-                ValueMapping("enabled", 1, StateMappingTargetType.NUMBER),
-            ),
-            null
-        )
-        val mapper = StateMapper().apply { registerMapping(mapping) }
-
-        val output = mapper.mapState("mapping", "unknown")
-        then(output).isNull()
-    }
-
-    @ParameterizedTest
-    @MethodSource("getInvalidMappings")
-    fun `should throw exception on target type mismatch`(valueMapping: ValueMapping) {
-        val mapping = StateMapping("mapping", listOf(valueMapping), null)
-        val mapper = StateMapper()
-
-        val exception = catchException { mapper.registerMapping(mapping) }
-
-        then(exception).isInstanceOf(MappingException::class.java)
-        then(exception.message).contains("Value '${valueMapping.to}' cannot be represented as type ${valueMapping.toType}")
-    }
-
-    companion object {
-        @JvmStatic
-        private fun getInvalidMappings(): Stream<ValueMapping> = listOf(
-            ValueMapping("test1", "abc", StateMappingTargetType.NUMBER),
-            ValueMapping("test2", "xyz", StateMappingTargetType.NUMBER),
-            ValueMapping("test3", "jkl", StateMappingTargetType.BOOL),
-        ).stream()
+        assertThatExceptionOfType(MappingException::class.java)
+            .isThrownBy {
+                StateMapper(converter, StateMappings(listOf(StateMapping("test", ValueType.INTEGER, emptyList(), default))))
+            }
+            .withMessageContaining("Value 'test' cannot be represented as type INTEGER")
     }
 }

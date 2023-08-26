@@ -2,7 +2,12 @@ package dev.drzepka.smarthome.haexporter.infrastructure.repository
 
 import dev.drzepka.smarthome.haexporter.domain.entity.State
 import dev.drzepka.smarthome.haexporter.domain.util.trimToSeconds
-import dev.drzepka.smarthome.haexporter.domain.value.*
+import dev.drzepka.smarthome.haexporter.domain.value.BooleanStateValue
+import dev.drzepka.smarthome.haexporter.domain.value.DoubleStateValue
+import dev.drzepka.smarthome.haexporter.domain.value.EntityId
+import dev.drzepka.smarthome.haexporter.domain.value.LongStateValue
+import dev.drzepka.smarthome.haexporter.domain.value.StateValue
+import dev.drzepka.smarthome.haexporter.domain.value.StringStateValue
 import dev.drzepka.smarthome.haexporter.infrastructure.database.InfluxDBClientProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
@@ -21,10 +26,10 @@ class InfluxDBStateRepositoryTest : BaseInfluxDBTest() {
     fun `should save states`() = runBlocking {
         val time = Instant.now()
         val states = listOf(
-            sensorState(time.plusSeconds(1), "computer", "temp1", "temperature", NumericStateValue(23)),
-            sensorState(time.plusSeconds(2), "computer", "temp2", "temperature", NumericStateValue(42.3)),
+            sensorState(time.plusSeconds(1), "computer", "temp1", "temperature", DoubleStateValue(23.0)),
+            sensorState(time.plusSeconds(2), "computer", "temp2", "temperature", DoubleStateValue(42.3)),
             sensorState(time.plusSeconds(3), "computer", "state", "temperature", StringStateValue("ok")),
-            sensorState(time.plusSeconds(4), "thermometer", null, "temperature", NumericStateValue(12)),
+            sensorState(time.plusSeconds(4), "thermometer", null, "temperature", DoubleStateValue(12.0)),
             sensorState(time.plusSeconds(5), "thermometer", "enabled", "th_state", BooleanStateValue(true)),
         )
 
@@ -34,10 +39,10 @@ class InfluxDBStateRepositoryTest : BaseInfluxDBTest() {
         then(records).hasSize(5)
 
         val trimmedTime = time.trimToSeconds()
-        records.assertContains(trimmedTime.plusSeconds(1), "temperature", "temp1", 23L, tags("computer", "temp1"))
+        records.assertContains(trimmedTime.plusSeconds(1), "temperature", "temp1", 23.0, tags("computer", "temp1"))
         records.assertContains(trimmedTime.plusSeconds(2), "temperature", "temp2", 42.3, tags("computer", "temp2"))
         records.assertContains(trimmedTime.plusSeconds(3), "temperature", "state", "ok", tags("computer", "state"))
-        records.assertContains(trimmedTime.plusSeconds(4), "temperature", "value", 12L, tags("thermometer", null))
+        records.assertContains(trimmedTime.plusSeconds(4), "temperature", "value", 12.0, tags("thermometer", null))
         records.assertContains(trimmedTime.plusSeconds(5), "th_state", "enabled", true, tags("thermometer", "enabled"))
     }
 
@@ -45,12 +50,12 @@ class InfluxDBStateRepositoryTest : BaseInfluxDBTest() {
     fun `should get time of last existing state`() = runBlocking {
         val time = Instant.now().minusSeconds(10).trimToSeconds()
         val states = listOf(
-            sensorState(time.plusSeconds(1), "wind", "station_1", "wind", NumericStateValue(12)),
-            sensorState(time.plusSeconds(2), "wind", "station_1", "wind", NumericStateValue(23)),
-            sensorState(time.plusSeconds(3), "wind", "station_2", "wind", NumericStateValue(34)),
+            sensorState(time.plusSeconds(1), "wind", "station_1", "wind", LongStateValue(12)),
+            sensorState(time.plusSeconds(2), "wind", "station_1", "wind", LongStateValue(23)),
+            sensorState(time.plusSeconds(3), "wind", "station_2", "wind", LongStateValue(34)),
             //////
-            sensorState(time.plusSeconds(4), "wind", null, "wind", NumericStateValue(45)),
-            sensorState(time.plusSeconds(5), "wind", null, "wind", NumericStateValue(56))
+            sensorState(time.plusSeconds(4), "wind", null, "wind", LongStateValue(45)),
+            sensorState(time.plusSeconds(5), "wind", null, "wind", LongStateValue(56))
         )
 
         repository.save(states.asFlow())

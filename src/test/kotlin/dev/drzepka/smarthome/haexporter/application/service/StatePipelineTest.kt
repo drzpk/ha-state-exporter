@@ -7,7 +7,6 @@ import dev.drzepka.smarthome.haexporter.application.model.SourceState
 import dev.drzepka.smarthome.haexporter.application.properties.EntitySchema
 import dev.drzepka.smarthome.haexporter.application.properties.SchemaProperties
 import dev.drzepka.smarthome.haexporter.application.properties.SchemasProperties
-import dev.drzepka.smarthome.haexporter.application.properties.ValueType
 import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
 import dev.drzepka.smarthome.haexporter.domain.service.StateValueConverter
@@ -15,9 +14,9 @@ import dev.drzepka.smarthome.haexporter.domain.util.trimToSeconds
 import dev.drzepka.smarthome.haexporter.domain.value.DefaultValueMapping
 import dev.drzepka.smarthome.haexporter.domain.value.EntitySelector
 import dev.drzepka.smarthome.haexporter.domain.value.StateMapping
-import dev.drzepka.smarthome.haexporter.domain.value.StateMappingTargetType
 import dev.drzepka.smarthome.haexporter.domain.value.StateMappings
 import dev.drzepka.smarthome.haexporter.domain.value.ValueMapping
+import dev.drzepka.smarthome.haexporter.domain.value.ValueType
 import dev.drzepka.smarthome.haexporter.infrastructure.repository.BaseInfluxDBTest
 import dev.drzepka.smarthome.haexporter.trait.KoinTrait
 import io.mockk.every
@@ -53,7 +52,7 @@ internal class StatePipelineTest : BaseInfluxDBTest(), KoinTrait, KoinTest {
             "outside_data",
             listOf(
                 EntitySchema("temperature_str", type = ValueType.STRING),
-                EntitySchema("temperature", type = ValueType.AUTO)
+                EntitySchema("temperature", type = ValueType.FLOAT)
             )
         ),
         SchemaProperties(
@@ -68,8 +67,9 @@ internal class StatePipelineTest : BaseInfluxDBTest(), KoinTrait, KoinTest {
     private val stateMappings = listOf(
         StateMapping(
             "availability",
-            listOf(ValueMapping("on", true, StateMappingTargetType.BOOL)),
-            DefaultValueMapping(false, StateMappingTargetType.BOOL)
+            ValueType.BOOLEAN,
+            listOf(ValueMapping("on", "true")),
+            DefaultValueMapping("false")
         )
     )
 
@@ -128,7 +128,7 @@ internal class StatePipelineTest : BaseInfluxDBTest(), KoinTrait, KoinTest {
             SourceState(2, "sensor.outside_temperature", "12.34", time + Duration.ofSeconds(2))
         )
 
-        every { stateValueConverter.convert(eq("99.99")) } throws IllegalArgumentException("Something bad happened")
+        every { stateValueConverter.convert(eq("99.99"), any()) } throws IllegalArgumentException("Something bad happened")
 
         statePipeline.execute(states.asFlow())
 

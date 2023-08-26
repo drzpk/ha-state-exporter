@@ -1,37 +1,43 @@
 package dev.drzepka.smarthome.haexporter.domain.service
 
-import dev.drzepka.smarthome.haexporter.domain.value.NumericStateValue
+import dev.drzepka.smarthome.haexporter.domain.value.DoubleStateValue
+import dev.drzepka.smarthome.haexporter.domain.value.LongStateValue
+import dev.drzepka.smarthome.haexporter.domain.value.StringStateValue
+import dev.drzepka.smarthome.haexporter.domain.value.ValueType
 import org.assertj.core.api.BDDAssertions.then
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
+import java.math.BigDecimal
 
 internal class StateValueConverterTest {
 
     private val converter = StateValueConverter()
 
     @Test
-    fun `should convert value to INT`() {
-        then(converter.convert("178623")).isEqualTo(NumericStateValue(178623))
-        then(converter.convert(Int.MIN_VALUE.toString())).isEqualTo(NumericStateValue(Int.MIN_VALUE))
-        then(converter.convert(Int.MAX_VALUE.toString())).isEqualTo(NumericStateValue(Int.MAX_VALUE))
+    fun `should convert value to STRING`() {
+        val payload = "test string"
+        then(converter.convert(payload, ValueType.STRING)).isEqualTo(StringStateValue(payload))
     }
 
     @Test
-    fun `should convert value to LONG`() {
-        then(converter.convert((Int.MAX_VALUE + 1L).toString())).isEqualTo(NumericStateValue(Int.MAX_VALUE + 1L))
-        then(converter.convert((Int.MIN_VALUE - 1L).toString())).isEqualTo(NumericStateValue(Int.MIN_VALUE - 1L))
+    fun `should convert value to INTEGER`() {
+        then(converter.convert("178623", ValueType.INTEGER)).isEqualTo(LongStateValue(178623))
+        then(converter.convert(Long.MIN_VALUE.toString(), ValueType.INTEGER)).isEqualTo(LongStateValue(Long.MIN_VALUE))
+        then(converter.convert(Long.MAX_VALUE.toString(), ValueType.INTEGER)).isEqualTo(LongStateValue(Long.MAX_VALUE))
+
+        val overflowMax = BigDecimal(Long.MAX_VALUE) + BigDecimal.ONE
+        then(converter.convert(overflowMax.toString(), ValueType.INTEGER)).isNull()
+
+        val overflowMin = BigDecimal(Long.MIN_VALUE) - BigDecimal.ONE
+        then(converter.convert(overflowMin.toString(), ValueType.INTEGER)).isNull()
     }
 
     @Test
     fun `should convert value to DOUBLE`() {
-        then(converter.convert("1.0")).isEqualTo(NumericStateValue(1.0))
-        then(converter.convert("3.1123")).isEqualTo(NumericStateValue(3.1123))
-    }
+        then(converter.convert("1.0", ValueType.FLOAT)).isEqualTo(DoubleStateValue(1.0))
+        then(converter.convert("3.1123", ValueType.FLOAT)).isEqualTo(DoubleStateValue(3.1123))
+        then(converter.convert("3.1123", ValueType.FLOAT)).isEqualTo(DoubleStateValue(3.1123))
+        then(converter.convert("2.11111111111111111111111111", ValueType.FLOAT)).isEqualTo(DoubleStateValue(2.111111111111111))
+        then(converter.convert("abc", ValueType.FLOAT)).isNull()
 
-    @ParameterizedTest
-    @ValueSource(strings = ["string", "12.34.56", "123aab", "12.12oo", "12,34"])
-    fun `should not convert unrecognized value`(value: String) {
-        then(converter.convert(value)).isNull()
     }
 }
