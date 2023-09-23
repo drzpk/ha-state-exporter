@@ -37,7 +37,8 @@ val influxDBModule = module {
 
 val infrastructureModule = module {
     val root by lazy { YamlConfigurationPropertiesProvider.fromEnvironmentFile().root }
-    single { root.homeAssistant }
+    single { root.homeAssistant.database }
+    single { root.homeAssistant.api }
     single { root.influxDB }
     single { root.exporter }
     single { EntitiesProperties(root.entities) }
