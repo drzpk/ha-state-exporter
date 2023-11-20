@@ -6,6 +6,7 @@ import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.spi.Connection
 import io.r2dbc.spi.ConnectionFactories
 import io.r2dbc.spi.ConnectionFactoryOptions
+import io.r2dbc.spi.ValidationDepth
 import kotlinx.coroutines.reactive.awaitSingle
 import org.apache.logging.log4j.kotlin.Logging
 import java.time.Duration
@@ -29,6 +30,9 @@ class SQLConnectionProvider(properties: SQLDataSourceProperties) {
         val poolConfig = ConnectionPoolConfiguration.builder(factory)
             .maxIdleTime(Duration.ofSeconds(2))
             .maxSize(10)
+            .validationQuery("SELECT 1")
+            .validationDepth(ValidationDepth.REMOTE)
+            .maxAcquireTime(Duration.ofSeconds(1))
             .build()
 
         pool = ConnectionPool(poolConfig)

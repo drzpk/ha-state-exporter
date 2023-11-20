@@ -1,0 +1,51 @@
+homeassistant:
+  database:
+    driver: mariadb
+    host: 192.168.0.5
+    port: 3306
+    username: test
+    password: 'password123'
+    database: homeassistant
+  api:
+    url: http://localhost:8123
+    token: ha_token
+
+influxdb:
+  url: http://localhost:8086
+  bucket: ha-state-exporter
+  org: 953f1fa77015bd98
+  token: influxdb_token
+
+entities:
+  - selector:
+      device: shellyem3_34945477f211
+      sensors:
+        - *
+        - '!test'
+    schema: energy
+  - selector:
+      device: shellyem3_34945477f211
+
+schemas:
+  - name: energy
+    influx_measurement_name: energy
+    entities:
+      - sensor: ceiling_led_power
+        type: BOOLEAN
+        state_mapping: binary_sensor
+        ignored_values:
+          - unknown
+      - sensor: null
+        state_mapping: test
+      - sensor: *
+        state_mapping: abc
+
+state_mappings:
+  - name: binary_sensor
+    target_type: BOOLEAN
+    mappings:
+      - from: 'off'
+        to: false
+      - from: 'on'
+        to: true
+    default_mapping: null

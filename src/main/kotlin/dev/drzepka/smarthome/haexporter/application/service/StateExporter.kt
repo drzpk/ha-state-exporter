@@ -22,7 +22,7 @@ class StateExporter(
 ) {
     private val flowConverter = FlowConverter(exporterProperties.batchSize, stateProvider::getStates)
 
-    suspend fun export() { // todo: connect to scheduled job
+    suspend fun export() {
         try {
             doExport()
         } catch (e: Exception) {
