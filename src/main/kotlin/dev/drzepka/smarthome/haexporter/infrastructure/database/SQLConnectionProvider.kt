@@ -1,44 +1,32 @@
 package dev.drzepka.smarthome.haexporter.infrastructure.database
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import dev.drzepka.smarthome.haexporter.infrastructure.properties.SQLDataSourceProperties
-import io.r2dbc.pool.ConnectionPool
-import io.r2dbc.pool.ConnectionPoolConfiguration
-import io.r2dbc.spi.Connection
-import io.r2dbc.spi.ConnectionFactories
-import io.r2dbc.spi.ConnectionFactoryOptions
-import io.r2dbc.spi.ValidationDepth
-import kotlinx.coroutines.reactive.awaitSingle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.apache.logging.log4j.kotlin.Logging
-import java.time.Duration
+import java.sql.Connection
 
 class SQLConnectionProvider(properties: SQLDataSourceProperties) {
 
-    private val pool: ConnectionPool
+    private val dataSource: HikariDataSource
 
     init {
         logger.info { "Creating SQL connection pool with ${properties.copy(password = "***")}" }
-        val options = ConnectionFactoryOptions.builder()
-            .option(ConnectionFactoryOptions.DRIVER, properties.driver)
-            .option(ConnectionFactoryOptions.HOST, properties.host)
-            .option(ConnectionFactoryOptions.PORT, properties.port)
-            .option(ConnectionFactoryOptions.USER, properties.username)
-            .option(ConnectionFactoryOptions.PASSWORD, properties.password)
-            .option(ConnectionFactoryOptions.DATABASE, properties.database)
-            .build()
+        val config = HikariConfig()
+        config.jdbcUrl = "jdbc:${properties.driver}://${properties.host}:${properties.port}/${properties.database}"
+        config.username = properties.username
+        config.password = properties.password
 
-        val factory = ConnectionFactories.get(options)
-        val poolConfig = ConnectionPoolConfiguration.builder(factory)
-            .maxIdleTime(Duration.ofSeconds(2))
-            .maxSize(10)
-            .validationQuery("SELECT 1")
-            .validationDepth(ValidationDepth.REMOTE)
-            .maxAcquireTime(Duration.ofSeconds(1))
-            .build()
+        config.maximumPoolSize = 10
+        config.validationTimeout = 3000
+        config.connectionTestQuery = "SELECT 1"
 
-        pool = ConnectionPool(poolConfig)
+        dataSource = HikariDataSource(config)
     }
 
-    suspend fun getConnection(): Connection = pool.create().awaitSingle()
+    suspend fun getConnection(): Connection = withContext(Dispatchers.IO) { dataSource.connection }
 
     companion object : Logging
 }

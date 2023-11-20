@@ -1,10 +1,9 @@
 package dev.drzepka.smarthome.haexporter.trait
 
-import dev.drzepka.smarthome.haexporter.domain.util.blockingGet
 import dev.drzepka.smarthome.haexporter.domain.util.toEpochSecondDouble
 import dev.drzepka.smarthome.haexporter.infrastructure.database.SQLConnectionProvider
 import dev.drzepka.smarthome.haexporter.infrastructure.properties.SQLDataSourceProperties
-import kotlinx.coroutines.reactive.awaitFirst
+import dev.drzepka.smarthome.haexporter.infrastructure.provider.executeAsync
 import org.testcontainers.containers.MariaDBContainer
 import java.time.Instant
 
@@ -23,21 +22,19 @@ interface MariaDBTrait {
 
     suspend fun SQLConnectionProvider.createSchema() {
         getConnection()
-            .createStatement(CREATE_TABLE_QUERY)
-            .execute()
-            .awaitFirst()
+            .createStatement()
+            .executeAsync(CREATE_TABLE_QUERY)
     }
 
     suspend fun SQLConnectionProvider.createState(id: Int, entityId: String, state: String, lastUpdated: Instant) {
         getConnection()
-            .createStatement(
+            .createStatement()
+            .executeAsync(
                 """
                     INSERT INTO states (state_id, entity_id, state, last_updated_ts)
                     VALUES ($id, '$entityId', '$state', ${lastUpdated.toEpochSecondDouble()})
                 """.trimIndent()
             )
-            .execute()
-            .blockingGet()
     }
 
     companion object {

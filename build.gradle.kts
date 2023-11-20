@@ -32,8 +32,8 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0")
     implementation("org.apache.logging.log4j:log4j-api-kotlin:1.2.0")
-    implementation("io.r2dbc:r2dbc-pool:1.0.0.RELEASE")
-    implementation("org.mariadb:r2dbc-mariadb:1.1.4")
+    implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("org.mariadb.jdbc:mariadb-java-client:3.3.0")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.2")
     runtimeOnly("org.jetbrains.kotlin:kotlin-reflect")
 
