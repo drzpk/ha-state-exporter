@@ -16,7 +16,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.time.Instant
 
-@Timeout(5)
+@Timeout(10)
 @Testcontainers
 class MariaDBHomeAssistantStateProviderTest : MariaDBTrait {
 

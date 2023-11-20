@@ -10,6 +10,7 @@ import java.sql.Connection
 
 class SQLConnectionProvider(properties: SQLDataSourceProperties) {
 
+    // TODO: gracefully shutdown data source on application exit
     private val dataSource: HikariDataSource
 
     init {
@@ -26,7 +27,12 @@ class SQLConnectionProvider(properties: SQLDataSourceProperties) {
         dataSource = HikariDataSource(config)
     }
 
-    suspend fun getConnection(): Connection = withContext(Dispatchers.IO) { dataSource.connection }
+    suspend fun <T> acquireConnection(block: suspend (Connection) -> T): T = withContext(Dispatchers.IO) {
+        val connection = dataSource.connection
+        val result = block(connection)
+        connection.close()
+        result
+    }
 
     companion object : Logging
 }

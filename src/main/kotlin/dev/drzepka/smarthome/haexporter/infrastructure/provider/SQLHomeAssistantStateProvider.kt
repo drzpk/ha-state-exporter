@@ -12,24 +12,33 @@ import java.time.Instant
 class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider) : HomeAssistantStateProvider {
 
     override suspend fun getStates(fromInclusive: Instant, offset: Int, limit: Int): List<SourceState> {
-        val resultSet = provider.getConnection()
-            .createStatement()
-            .executeQueryAsync(
-                """
-                    SELECT $COLUMN_ID, $COLUMN_ENTITY_ID, $COLUMN_STATE, $COLUMN_LAST_UPDATED
-                    FROM $TABLE_STATES
-                    WHERE $COLUMN_LAST_UPDATED >= ${fromInclusive.toDBDateTime()}
-                    ORDER BY $COLUMN_LAST_UPDATED
-                    LIMIT $offset, $limit
+        return provider.acquireConnection {
+            val resultSet = it.createStatement()
+                .executeQueryAsync(
+                    """
+                        SELECT s.*, m.$COLUMN_ENTITY_ID
+                        FROM $TABLE_STATES_META m
+                        JOIN (
+                            SELECT $COLUMN_ID, $COLUMN_STATE, $COLUMN_LAST_UPDATED, $COLUMN_METADATA_ID
+                            FROM $TABLE_STATES
+                            WHERE $COLUMN_LAST_UPDATED >= ${fromInclusive.toDBDateTime()}
+                            ORDER BY $COLUMN_LAST_UPDATED
+                            LIMIT $offset, $limit
+                        ) s
+                        ON s.$COLUMN_METADATA_ID = m.$COLUMN_METADATA_ID
+                        
+
                  """.trimIndent()
-            )
+                )
 
-        val states = ArrayList<SourceState>(limit)
-        while (resultSet.next()) {
-            states.add(resultSet.toSourceState())
+            val states = ArrayList<SourceState>(limit)
+            while (resultSet.next()) {
+                states.add(resultSet.toSourceState())
+            }
+
+            resultSet.closeAsync()
+            states
         }
-
-        return states
     }
 
     private fun ResultSet.toSourceState(): SourceState = SourceState(
@@ -41,9 +50,11 @@ class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider)
 
     companion object {
         private const val TABLE_STATES = "states"
+        private const val TABLE_STATES_META = "states_meta"
         private const val COLUMN_ID = "state_id"
         private const val COLUMN_ENTITY_ID = "entity_id"
         private const val COLUMN_STATE = "state"
         private const val COLUMN_LAST_UPDATED = "last_updated_ts"
+        private const val COLUMN_METADATA_ID = "metadata_id"
     }
 }
