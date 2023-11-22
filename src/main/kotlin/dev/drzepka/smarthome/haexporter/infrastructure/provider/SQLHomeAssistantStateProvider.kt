@@ -5,6 +5,7 @@ import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantStateP
 import dev.drzepka.smarthome.haexporter.infrastructure.database.SQLConnectionProvider
 import dev.drzepka.smarthome.haexporter.infrastructure.database.fromDBDateTime
 import dev.drzepka.smarthome.haexporter.infrastructure.database.toDBDateTime
+import org.apache.logging.log4j.kotlin.Logging
 import java.sql.ResultSet
 import java.time.Instant
 
@@ -33,7 +34,7 @@ class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider)
 
             val states = ArrayList<SourceState>(limit)
             while (resultSet.next()) {
-                states.add(resultSet.toSourceState())
+                convertToSourceState(resultSet)?.also { state -> states.add(state) }
             }
 
             resultSet.closeAsync()
@@ -41,14 +42,44 @@ class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider)
         }
     }
 
-    private fun ResultSet.toSourceState(): SourceState = SourceState(
-        getLong(COLUMN_ID),
-        getString(COLUMN_ENTITY_ID),
-        getString(COLUMN_STATE),
-        getDouble(COLUMN_LAST_UPDATED).fromDBDateTime()
-    )
+    private fun convertToSourceState(source: ResultSet): SourceState? = try {
+        doConvertToSourceState(source)
+    } catch (e: Exception) {
+        logger.error("Error creating source state from result set", e)
+        null
+    }
 
-    companion object {
+    private fun doConvertToSourceState(source: ResultSet): SourceState? {
+        val id = source.getLong(COLUMN_ID)
+
+        val entityId = source.getString(COLUMN_ENTITY_ID)
+        if (entityId == null) {
+            logger.warn { "Skipping state with id=$id, $COLUMN_ENTITY_ID is null" }
+            return null
+        }
+
+        val state = source.getString(COLUMN_STATE)
+        if (state == null) {
+            logger.warn { "Skipping state with id=$id, $COLUMN_STATE is null" }
+            return null
+        }
+
+        val lastUpdated = source.getDouble(COLUMN_LAST_UPDATED)
+        if (source.wasNull()) {
+            logger.warn { "Skipping state with id=$id, $COLUMN_LAST_UPDATED is null" }
+            return null
+        }
+
+
+        return SourceState(
+            id,
+            entityId,
+            state,
+            lastUpdated.fromDBDateTime()
+        )
+    }
+
+    companion object : Logging {
         private const val TABLE_STATES = "states"
         private const val TABLE_STATES_META = "states_meta"
         private const val COLUMN_ID = "state_id"

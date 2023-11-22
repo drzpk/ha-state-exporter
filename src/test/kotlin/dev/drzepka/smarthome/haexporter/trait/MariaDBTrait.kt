@@ -32,7 +32,7 @@ interface MariaDBTrait {
         }
     }
 
-    suspend fun SQLConnectionProvider.createState(id: Int, entityId: String, state: String, lastUpdated: Instant) {
+    suspend fun SQLConnectionProvider.createState(id: Int, entityId: String, state: String?, lastUpdated: Instant?) {
         println("Creating state: $entityId")
         var metadataId = acquireConnection {
             val result = it.createStatement()
@@ -58,11 +58,12 @@ interface MariaDBTrait {
         println("Inserted into states meta")
 
         acquireConnection {
+            val nullableState = if (state != null) "'$state'" else "null"
             it.createStatement()
                 .executeAsync(
                     """
                     INSERT INTO states (state_id, state, last_updated_ts, metadata_id)
-                    VALUES ($id, '$state', ${lastUpdated.toEpochSecondDouble()}, $metadataId)
+                    VALUES ($id, $nullableState, ${lastUpdated?.toEpochSecondDouble()}, $metadataId)
                 """.trimIndent()
                 )
         }

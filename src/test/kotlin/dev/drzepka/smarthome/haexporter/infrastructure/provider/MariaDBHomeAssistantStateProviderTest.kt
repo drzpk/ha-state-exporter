@@ -66,4 +66,20 @@ class MariaDBHomeAssistantStateProviderTest : MariaDBTrait {
 
         Unit
     }
+
+    @Test
+    fun `should skip states with missing data`() = runBlocking {
+        val time = Instant.now()
+        connectionProvider.createState(1, "id", "state", time.plusSeconds(10))
+        connectionProvider.createState(2, "id", null, time.plusSeconds(7))
+        connectionProvider.createState(3, "id", "state", null)
+        connectionProvider.createState(4, "id", "state", time.plusSeconds(14))
+
+        val states = stateProvider.getStates(time, 0, 10)
+
+        then(states).hasSize(2)
+        then(states.map { it.id }).containsAll(listOf(1, 4))
+
+        Unit
+    }
 }
