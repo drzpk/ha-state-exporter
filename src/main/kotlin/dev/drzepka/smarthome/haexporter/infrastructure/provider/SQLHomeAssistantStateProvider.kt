@@ -1,38 +1,24 @@
 package dev.drzepka.smarthome.haexporter.infrastructure.provider
 
 import dev.drzepka.smarthome.haexporter.application.model.SourceState
+import dev.drzepka.smarthome.haexporter.application.model.SourceStateQuery
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantStateProvider
 import dev.drzepka.smarthome.haexporter.infrastructure.database.SQLConnectionProvider
 import dev.drzepka.smarthome.haexporter.infrastructure.database.fromDBDateTime
 import dev.drzepka.smarthome.haexporter.infrastructure.database.toDBDateTime
 import org.apache.logging.log4j.kotlin.Logging
 import java.sql.ResultSet
-import java.time.Instant
 
 @Suppress("SqlNoDataSourceInspection")
 class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider) : HomeAssistantStateProvider {
 
-    override suspend fun getStates(fromInclusive: Instant, offset: Int, limit: Int): List<SourceState> {
+    override suspend fun getStates(query: SourceStateQuery): List<SourceState> {
+        val sqlQuery = createSqlQuery(query)
         return provider.acquireConnection {
-            val resultSet = it.createStatement()
-                .executeQueryAsync(
-                    """
-                        SELECT s.*, m.$COLUMN_ENTITY_ID
-                        FROM $TABLE_STATES_META m
-                        JOIN (
-                            SELECT $COLUMN_ID, $COLUMN_STATE, $COLUMN_LAST_UPDATED, $COLUMN_METADATA_ID
-                            FROM $TABLE_STATES
-                            WHERE $COLUMN_LAST_UPDATED >= ${fromInclusive.toDBDateTime()}
-                            ORDER BY $COLUMN_LAST_UPDATED
-                            LIMIT $offset, $limit
-                        ) s
-                        ON s.$COLUMN_METADATA_ID = m.$COLUMN_METADATA_ID
-                        
-
-                 """.trimIndent()
-                )
-
-            val states = ArrayList<SourceState>(limit)
+            val resultSet = it
+                .createStatement()
+                .executeQueryAsync(sqlQuery)
+            val states = ArrayList<SourceState>(query.limit)
             while (resultSet.next()) {
                 convertToSourceState(resultSet)?.also { state -> states.add(state) }
             }
@@ -41,6 +27,47 @@ class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider)
             states
         }
     }
+
+    private suspend fun createSqlQuery(query: SourceStateQuery): String {
+        val metadataIdsCondition = if (query.entities?.isNotEmpty() == true)
+            getMetadataIdsCondition(query.entities)
+                .joinToString(prefix = "(", separator = ", ", postfix = ")")
+                .let { "$COLUMN_METADATA_ID IN $it" }
+        else "1=1"
+
+        return """
+            SELECT s.*, m.$COLUMN_ENTITY_ID
+            FROM $TABLE_STATES_META m
+            JOIN (
+                SELECT $COLUMN_ID, $COLUMN_STATE, $COLUMN_LAST_UPDATED, $COLUMN_METADATA_ID
+                FROM $TABLE_STATES
+                WHERE $COLUMN_LAST_UPDATED >= ${query.from.toDBDateTime()} AND $metadataIdsCondition
+                LIMIT ${query.offset}, ${query.limit}
+            ) s
+            ON s.$COLUMN_METADATA_ID = m.$COLUMN_METADATA_ID
+            ORDER BY s.$COLUMN_LAST_UPDATED
+        """.trimIndent()
+    }
+
+    private suspend fun getMetadataIdsCondition(entities: Collection<String>): Set<Int> =
+        provider.acquireConnection {
+            val entityIds = entities.joinToString { e ->"'" + e.replace("'", "''") + "'" }
+            val rs = it
+                .createStatement()
+                .executeQueryAsync("""
+                    SELECT $COLUMN_METADATA_ID
+                    FROM $TABLE_STATES_META
+                    WHERE entity_id IN ($entityIds)
+                """.trimIndent())
+
+            sequence {
+                while (rs.next()) {
+                    val id = rs.getInt(COLUMN_METADATA_ID)
+                    if (!rs.wasNull())
+                        yield(id)
+                }
+            }
+        }.toSet()
 
     private fun convertToSourceState(source: ResultSet): SourceState? = try {
         doConvertToSourceState(source)

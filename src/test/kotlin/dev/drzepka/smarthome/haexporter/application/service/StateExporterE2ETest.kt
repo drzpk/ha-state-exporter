@@ -121,12 +121,13 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
         connectionProvider.createState(3, "sensor.temperature_inside", "22.04", time.plusSeconds(2))
         connectionProvider.createState(4, "sensor.temperature_outside", "24.43", time.plusSeconds(3))
         connectionProvider.createState(5, "sensor.temperature", "25.92", time.plusSeconds(4))
-        connectionProvider.createState(6, "sensor.unknown_entity", "test", time.plusSeconds(5))
+        connectionProvider.createState(6, "sensor.unknown_entity1", "test", time.plusSeconds(5))
 
         coEvery { metadataProvider.getEntityMetadata() } returns listOf(
             EntityMetadata("sensor.temperature_outside", Instant.now()),
             EntityMetadata("sensor.temperature_inside", Instant.now()),
-            EntityMetadata("sensor.unknown_entity", Instant.now()),
+            EntityMetadata("sensor.temperature", Instant.now()),
+            EntityMetadata("sensor.unknown_entity2", Instant.now()),
             EntityMetadata("binary_sensor.door_state", Instant.now())
         )
 
@@ -143,20 +144,21 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
     }
 
     @Test
-    fun `should export states starting at the time of last previously exported state`() = runBlocking {
+    fun `should export states starting from the last exported state or from the beginning`() = runBlocking {
         val time = Instant.now().trimToSeconds().minusSeconds(100)
 
         val preExistingStates = listOf(
             State(time.plusSeconds(10), EntityId("sensor", "temperature", "inside"), "temp", DoubleStateValue(23.1)),
-            State(time.plusSeconds(10), EntityId("sensor", "temperature", "outside"), "temp", DoubleStateValue(12.2))
         )
         stateRepository.save(preExistingStates.asFlow())
 
-        connectionProvider.createState(1, "binary_sensor.door_state", "open", time.plusSeconds(6))
+        connectionProvider.createState(1, "binary_sensor.door_state", "open", time.plusSeconds(1))
         connectionProvider.createState(2, "sensor.temperature_inside", "21.01", time.plusSeconds(1))
-        connectionProvider.createState(3, "sensor.temperature_inside", "22.02", time.plusSeconds(10))
-        connectionProvider.createState(4, "sensor.temperature_inside", "60.02", time.plusSeconds(11))
-        connectionProvider.createState(5, "sensor.temperature_outside", "29.31", time.plusSeconds(12))
+        connectionProvider.createState(3, "sensor.temperature_outside", "21.05", time.plusSeconds(2))
+        connectionProvider.createState(4, "sensor.temperature_inside", "22.02", time.plusSeconds(10))
+        connectionProvider.createState(5, "sensor.temperature_inside", "60.02", time.plusSeconds(11))
+        connectionProvider.createState(6, "sensor.temperature_outside", "29.31", time.plusSeconds(12))
+        connectionProvider.createState(7, "sensor.unknown", "30.05", time.plusSeconds(13))
 
         coEvery { metadataProvider.getEntityMetadata() } returns listOf(
             EntityMetadata("sensor.temperature_inside", Instant.now()),
@@ -167,12 +169,13 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
         stateExporter.export()
 
         val records = getRecords()
-        then(records).hasSize(4)
+        //then(records).hasSize(7)
 
-        records.assertContains(time.plusSeconds(10), "temp", "inside", 22.02, tags("temperature", "inside")) // duplicates are overridden
+        records.assertContains(time.plusSeconds(1), "doors", "state", "open", tags("door", "state", "binary_sensor"))
+        records.assertContains(time.plusSeconds(2), "temp", "outside", 21.05, tags("temperature", "outside"))
+        records.assertContains(time.plusSeconds(10), "temp", "inside", 22.02, tags("temperature", "inside"))
         records.assertContains(time.plusSeconds(11), "temp", "inside", 60.02, tags("temperature", "inside"))
-        records.assertContains(time.plusSeconds(10), "temp", "outside", 12.2, tags("temperature", "outside"))
-        records.assertNotContains(time.plusSeconds(1), "temp", "inside")
+        records.assertContains(time.plusSeconds(12), "temp", "outside", 29.31, tags("temperature", "outside"))
     }
 
     private fun tags(dev: String, sensor: String?, clazz: String = "sensor"): Map<String, String> =

@@ -14,5 +14,6 @@ interface KoinTrait {
             single { SchemasProperties(emptyList()) }
             single { StateMappings(emptyList()) }
             single { ExporterProperties() }
+            single { get<ExporterProperties>().processing }
         }
 }

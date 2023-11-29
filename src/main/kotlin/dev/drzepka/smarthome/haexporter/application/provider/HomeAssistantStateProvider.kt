@@ -1,8 +1,8 @@
 package dev.drzepka.smarthome.haexporter.application.provider
 
 import dev.drzepka.smarthome.haexporter.application.model.SourceState
-import java.time.Instant
+import dev.drzepka.smarthome.haexporter.application.model.SourceStateQuery
 
 interface HomeAssistantStateProvider {
-    suspend fun getStates(fromInclusive: Instant, offset: Int, limit: Int): List<SourceState>
+    suspend fun getStates(query: SourceStateQuery): List<SourceState>
 }

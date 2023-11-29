@@ -2,17 +2,20 @@ package dev.drzepka.smarthome.haexporter.application.service
 
 import dev.drzepka.smarthome.haexporter.application.model.EntityMetadata
 import dev.drzepka.smarthome.haexporter.application.model.SourceState
+import dev.drzepka.smarthome.haexporter.application.model.SourceStateQuery
 import dev.drzepka.smarthome.haexporter.application.properties.ExporterProperties
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantEntityMetadataProvider
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantStateProvider
-import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
-import dev.drzepka.smarthome.haexporter.domain.properties.EntityProperties
-import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
 import dev.drzepka.smarthome.haexporter.domain.service.EntityIdResolver
-import dev.drzepka.smarthome.haexporter.domain.value.EntitySelector
+import dev.drzepka.smarthome.haexporter.domain.service.ProcessingStrategyResolver
+import dev.drzepka.smarthome.haexporter.domain.value.EntityId
+import dev.drzepka.smarthome.haexporter.domain.value.EntityStateTime
+import dev.drzepka.smarthome.haexporter.domain.value.strategy.ProcessingStrategy
+import dev.drzepka.smarthome.haexporter.domain.value.strategy.WorkUnit
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.junit5.MockKExtension
 import io.mockk.just
 import io.mockk.mockk
@@ -28,75 +31,69 @@ import java.time.Instant
 @ExtendWith(MockKExtension::class)
 internal class StateExporterTest {
 
-    private val entitiesProperties = listOf(
-        EntityProperties(EntitySelector(device = "temperature"), "temperature")
-    )
-
-    private val stateRepository = mockk<StateRepository>()
+    private val strategyResolver = mockk<ProcessingStrategyResolver>()
     private val metadataProvider = mockk<HomeAssistantEntityMetadataProvider>()
+    private val entityIdResolver = mockk<EntityIdResolver>()
     private val stateProvider = mockk<HomeAssistantStateProvider>()
     private val statePipeline = mockk<StatePipeline>()
 
     private val flowSlot = slot<Flow<SourceState>>()
 
     private val stateExporter = StateExporter(
-        stateRepository,
+        strategyResolver,
         metadataProvider,
-        ExporterProperties(batchSize = 500),
-        EntityIdResolver(EntitiesProperties(entitiesProperties)),
+        entityIdResolver,
         stateProvider,
-        statePipeline
+        statePipeline,
+        ExporterProperties(batchSize = 500)
     )
 
     @Test
-    fun `should export states from beginning when there are no existing states in repository`() = runBlocking {
+    fun `should manage exporting process`() = runBlocking {
         val sourceStates = listOf(
-            SourceState(1, "sensor.temperature_outside", "12.34", Instant.now()),
-            SourceState(2, "sensor.temperature_outside", "56.78", Instant.now()),
-            SourceState(4, "sensor.temperature_inside", "22.34", Instant.now()),
+            SourceState(1, ENTITY_ID_1_STR, "12.34", TIME_1),
+            SourceState(2, ENTITY_ID_1_STR, "56.78", TIME_2),
+            SourceState(4, ENTITY_ID_2_STR, "22.34", TIME_3),
         )
 
-        coEvery { stateRepository.getLastStateTime(any()) } returns null
         coEvery { metadataProvider.getEntityMetadata() } returns listOf(
-            EntityMetadata("sensor.temperature_outside", Instant.now()),
-            EntityMetadata("sensor.temperature_inside", Instant.now()),
-            EntityMetadata("sensor.unknown_entity", Instant.now())
+            EntityMetadata(ENTITY_ID_1_STR, TIME_1),
+            EntityMetadata(ENTITY_ID_2_STR, TIME_2),
+            EntityMetadata("sensor.unknown_entity", TIME_3)
         )
-        coEvery { stateProvider.getStates(any(), any(), any()) } returns sourceStates
+
+        every { entityIdResolver.resolve(any()) } returns null
+        every { entityIdResolver.resolve(ENTITY_ID_1_STR) } returns ENTITY_ID_1
+        every { entityIdResolver.resolve(ENTITY_ID_2_STR) } returns ENTITY_ID_2
+
+        val workUnitTime = Instant.now()
+        val strategy = TestStrategy(listOf(WorkUnit(workUnitTime, setOf(ENTITY_ID_1, ENTITY_ID_2))))
+        coEvery {
+            strategyResolver.resolve(listOf(EntityStateTime(ENTITY_ID_1, TIME_1), EntityStateTime(ENTITY_ID_2, TIME_2)))
+        } returns strategy
+
+        coEvery { stateProvider.getStates(any()) } returns sourceStates
         coEvery { statePipeline.execute(capture(flowSlot)) } just Runs
 
         stateExporter.export()
 
         then(flowSlot.captured.toList()).containsAll(sourceStates)
-        coVerify { stateProvider.getStates(Instant.EPOCH, 0, 500) }
+        coVerify { stateProvider.getStates(SourceStateQuery(workUnitTime, setOf(ENTITY_ID_1_STR, ENTITY_ID_2_STR), 0, 500)) }
     }
 
-    @Test
-    fun `should export states starting at the time of last previously exported state`() = runBlocking {
-        val sourceStates = listOf(
-            SourceState(1, "sensor.temperature_outside", "12.34", Instant.now()),
-            SourceState(2, "sensor.unknown_1", "22.34", Instant.now()),
-            SourceState(3, "sensor.temperature_inside", "22.34", Instant.now()),
-            SourceState(4, "sensor.unknown_2", "22.34", Instant.now())
-        )
+    companion object {
+        private const val ENTITY_ID_1_STR = "sensor.temperature_outside"
+        private const val ENTITY_ID_2_STR = "sensor.temperature_inside"
 
-        val time = Instant.now().minusSeconds(100)
-        coEvery { stateRepository.getLastStateTime(match { it.toString() == "sensor.temperature_outside" }) } returns time.plusSeconds(20)
-        coEvery { stateRepository.getLastStateTime(match { it.toString() == "sensor.unknown_1" }) } returns time.plusSeconds(50)
-        coEvery { stateRepository.getLastStateTime(match { it.toString() == "sensor.temperature_inside" }) } returns time.plusSeconds(14)
-        coEvery { stateRepository.getLastStateTime(match { it.toString() == "sensor.unknown_2" }) } returns time.plusSeconds(1)
+        private val ENTITY_ID_1 = EntityId("sensor", "temperature", "outside")
+        private val ENTITY_ID_2 = EntityId("sensor", "temperature", "inside")
 
-        coEvery { metadataProvider.getEntityMetadata() } returns listOf(
-            EntityMetadata("sensor.temperature_outside", Instant.now()),
-            EntityMetadata("sensor.temperature_inside", Instant.now()),
-            EntityMetadata("sensor.unknown_entity", Instant.now())
-        )
-        coEvery { stateProvider.getStates(any(), any(), any()) } returns sourceStates
-        coEvery { statePipeline.execute(capture(flowSlot)) } just Runs
-
-        stateExporter.export()
-
-        then(flowSlot.captured.toList()).containsAll(sourceStates)
-        coVerify { stateProvider.getStates(time.plusSeconds(20), 0, 500) }
+        private val TIME_1 = Instant.now().plusSeconds(1)
+        private val TIME_2 = Instant.now().plusSeconds(2)
+        private val TIME_3 = Instant.now().plusSeconds(3)
     }
+}
+
+private class TestStrategy(val units: List<WorkUnit>) : ProcessingStrategy {
+    override fun getWorkUnits(): List<WorkUnit> = units
 }

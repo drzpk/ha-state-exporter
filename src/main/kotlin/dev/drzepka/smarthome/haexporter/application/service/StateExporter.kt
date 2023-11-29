@@ -1,64 +1,48 @@
 package dev.drzepka.smarthome.haexporter.application.service
 
 import dev.drzepka.smarthome.haexporter.application.converter.FlowConverter
-import dev.drzepka.smarthome.haexporter.application.model.EntityIdWrapper
-import dev.drzepka.smarthome.haexporter.application.model.EntityMetadata
 import dev.drzepka.smarthome.haexporter.application.properties.ExporterProperties
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantEntityMetadataProvider
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantStateProvider
-import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
 import dev.drzepka.smarthome.haexporter.domain.service.EntityIdResolver
-import dev.drzepka.smarthome.haexporter.domain.value.EntityId
+import dev.drzepka.smarthome.haexporter.domain.service.ProcessingStrategyResolver
+import dev.drzepka.smarthome.haexporter.domain.value.EntityStateTime
 import org.apache.logging.log4j.kotlin.Logging
-import java.time.Instant
 
 class StateExporter(
-    private val stateRepository: StateRepository,
+    private val strategyResolver: ProcessingStrategyResolver,
     private val metadataProvider: HomeAssistantEntityMetadataProvider,
-    private val exporterProperties: ExporterProperties,
     private val entityIdResolver: EntityIdResolver,
     private val stateProvider: HomeAssistantStateProvider,
-    private val statePipeline: StatePipeline
+    private val statePipeline: StatePipeline,
+    exporterProperties: ExporterProperties
 ) {
-    private val flowConverter = FlowConverter(exporterProperties.batchSize, stateProvider::getStates)
+    private val flowConverter = FlowConverter(exporterProperties.batchSize, exporterProperties.processingLimit, stateProvider::getStates)
 
     suspend fun export() {
         try {
             doExport()
         } catch (e: Exception) {
-            logger.error(e) { "Error while exporting state" }
+            logger.error(e) { "Error while exporting states" }
         }
     }
 
     private suspend fun doExport() {
         logger.info { "Starting to export states" }
 
-        val metadata = getMetadata()
-        val startTime = getMostRecentStateTime(metadata.map { it.entityId })
+        val currentStates = getCurrentStates()
+        val strategy = strategyResolver.resolve(currentStates)
+        logger.info { "Detected ${currentStates.size} current states" }
 
-        val flow = flowConverter.execute(startTime, exporterProperties.processingLimit)
+        val flow = flowConverter.execute(strategy.getWorkUnits())
         statePipeline.execute(flow)
     }
 
-    private suspend fun getMetadata(): List<EntityIdWrapper<EntityMetadata>> = metadataProvider
+    private suspend fun getCurrentStates(): List<EntityStateTime> = metadataProvider
         .getEntityMetadata()
-        .map { entityIdResolver.resolve(it.entityId) to it }
-        .mapNotNull { if (it.first != null) EntityIdWrapper(it.first!!, it.second) else null }
         .also { logger.debug { "Received entity metadata: $it" } }
-
-    private suspend fun getMostRecentStateTime(metadata: List<EntityId>): Instant {
-        val lastTime = metadata
-            .mapNotNull { stateRepository.getLastStateTime(it) }
-            .maxOrNull()
-
-        return if (lastTime != null) {
-            logger.info { "Most recent state time is $lastTime" }
-            lastTime
-        } else {
-            logger.info { "No states were found with matching entity IDs. State export will start from beginning " }
-            Instant.EPOCH
-        }
-    }
+        .map { entityIdResolver.resolve(it.entityId) to it }
+        .mapNotNull { if (it.first != null) EntityStateTime(it.first!!, it.second.lastChanged) else null }
 
     companion object : Logging
 }

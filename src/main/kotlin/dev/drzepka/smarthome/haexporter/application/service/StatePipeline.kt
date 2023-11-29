@@ -63,7 +63,7 @@ class StatePipeline(
         }
 
         val value = processState(input.state, schema.getEntitySchema(entityId.sensor))
-        return value?.let { State(input.time, entityId, schema.influxMeasurementName, it) }
+        return value?.let { State(input.lastUpdated, entityId, schema.influxMeasurementName, it) }
     }
 
     private fun processState(input: String, schema: EntitySchema): StateValue? {

@@ -10,6 +10,7 @@ import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
 import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
 import dev.drzepka.smarthome.haexporter.domain.service.EntityConfigurationResolver
 import dev.drzepka.smarthome.haexporter.domain.service.EntityIdResolver
+import dev.drzepka.smarthome.haexporter.domain.service.ProcessingStrategyResolver
 import dev.drzepka.smarthome.haexporter.domain.service.StateMapper
 import dev.drzepka.smarthome.haexporter.domain.service.StateValueConverter
 import dev.drzepka.smarthome.haexporter.domain.value.StateMappings
@@ -26,6 +27,7 @@ import java.time.Clock
 val domainModule = module {
     single { EntityConfigurationResolver(get()) }
     single { EntityIdResolver(get()) }
+    single { ProcessingStrategyResolver(get(), get()) }
     single { StateValueConverter() }
     single { StateMapper(get(), get()) }
 }
@@ -46,6 +48,7 @@ val infrastructureModule = module {
     single { root.homeAssistant.api }
     single { root.influxDB }
     single { root.exporter }
+    single { root.exporter.processing }
     single { EntitiesProperties(root.entities) }
     single { SchemasProperties(root.schemas) }
     single { StateMappings(root.stateMappings) }
