@@ -28,10 +28,9 @@ class SQLConnectionProvider(properties: SQLDataSourceProperties) {
     }
 
     suspend fun <T> acquireConnection(block: suspend (Connection) -> T): T = withContext(Dispatchers.IO) {
-        val connection = dataSource.connection
-        val result = block(connection)
-        connection.close()
-        result
+        dataSource.connection.use { connection ->
+            block(connection)
+        }
     }
 
     companion object : Logging
