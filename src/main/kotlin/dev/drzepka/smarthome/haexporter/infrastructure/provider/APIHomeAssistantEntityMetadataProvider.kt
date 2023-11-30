@@ -34,11 +34,23 @@ class APIHomeAssistantEntityMetadataProvider(private val properties: HomeAssista
 
     override suspend fun getEntityMetadata(): List<EntityMetadata> = client
         .get("${properties.url}/api/states").body<List<HAState>>()
-        .map { EntityMetadata(it.entityId, OffsetDateTime.parse(it.lastChanged).toInstant()) }
+        .map { it.toEntityMetadata() }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
     private data class HAState(
         val entityId: String,
-        val lastChanged: String
-    )
+        val lastChanged: String,
+        val lastUpdated: String
+    ) {
+        fun toEntityMetadata(): EntityMetadata {
+            val lastChangedTs = OffsetDateTime.parse(lastChanged).toInstant()
+            val lastUpdatedTs = OffsetDateTime.parse(lastUpdated).toInstant()
+
+            // lastChanged - updated when state is changed
+            // lastUpdated - updated when state or attribute is changed
+            // State records in DB are created for state or attribute change, so the highest value must be used
+            // todo: move this logic to one of the higher layers
+            return EntityMetadata(entityId, maxOf(lastChangedTs, lastUpdatedTs))
+        }
+    }
 }

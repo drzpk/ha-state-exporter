@@ -10,21 +10,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.KoinExperimentalAPI
-import org.koin.core.annotation.KoinInternalApi
+import org.apache.logging.log4j.kotlin.Logging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
-import org.slf4j.LoggerFactory
 import java.time.Duration
 
-
-private val logger = LoggerFactory.getLogger("dev.drzepka.smarthome.haexporter.HaStateExporter")
-
-@OptIn(KoinInternalApi::class, KoinExperimentalAPI::class)
 fun main() {
     val handler = CoroutineExceptionHandler { _, exception ->
-        logger.error("Uncaught Coroutines exception", exception)
+        HaStateExporter.logger.error("Uncaught Coroutines exception", exception)
     }
 
     val scope = CoroutineScope(Dispatchers.Default + Job() + CoroutineName("HSE-scope") + handler)
@@ -41,11 +35,16 @@ private class HaStateExporter(private val scope: CoroutineScope) : KoinComponent
 
     fun start() {
         logger.info("Starting HA state exporter")
+
+        var initialLaunch = true
         scheduler.scheduleJob("exporter", Duration.ofMinutes(5)) {
-            exporter.export()
+            if (!initialLaunch)
+                exporter.export()
         }
+
         scope.launch {
             exporter.export()
+            initialLaunch = false
         }
 
         while (scope.isActive) {
@@ -54,4 +53,6 @@ private class HaStateExporter(private val scope: CoroutineScope) : KoinComponent
 
         logger.info("Stopping HA state exporter")
     }
+
+    companion object : Logging
 }
