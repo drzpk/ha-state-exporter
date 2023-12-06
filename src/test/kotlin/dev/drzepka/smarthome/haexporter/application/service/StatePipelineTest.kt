@@ -43,23 +43,26 @@ internal class StatePipelineTest : BaseInfluxDBTest(), KoinTrait, KoinTest {
 
     private val entityProperties = listOf(
         EntityProperties(EntitySelector(devices = listOf("outside")), "outside_sensor_schema"),
-        EntityProperties(EntitySelector(devices = listOf("energy")), "energy"),
+        EntityProperties(EntitySelector(devices = listOf("energy", "old_energy")), "energy"),
     )
 
     private val schemaProperties = listOf(
         SchemaProperties(
-            "outside_sensor_schema",
-            "outside_data",
-            listOf(
+            name = "outside_sensor_schema",
+            influxMeasurementName = "outside_data",
+            entities = listOf(
                 EntitySchema("temperature_str", type = ValueType.STRING),
                 EntitySchema("temperature", type = ValueType.FLOAT, ignoredValues = listOf("5.0"))
             )
         ),
         SchemaProperties(
-            "energy",
-            "energy",
-            listOf(
+            name = "energy",
+            influxMeasurementName = "energy",
+            entities = listOf(
                 EntitySchema("availability", type = ValueType.STRING, stateMapping = "availability")
+            ),
+            deviceNameMapping = mapOf(
+                "old_energy" to "energy"
             )
         )
     )
@@ -120,6 +123,24 @@ internal class StatePipelineTest : BaseInfluxDBTest(), KoinTrait, KoinTest {
         records.assertContains(time + Duration.ofSeconds(4), "energy", "availability", true, mapOf("device" to "energy"))
         records.assertContains(time + Duration.ofSeconds(5), "energy", "availability", false, mapOf("device" to "energy"))
         records.assertContains(time + Duration.ofSeconds(6), "energy", "availability", false, mapOf("device" to "energy"))
+    }
+
+    @Test
+    fun `should map device name`() = runBlocking {
+        val time = Instant.now().trimToSeconds()
+        val states = listOf(
+            SourceState(1, "sensor.energy_availability", "on", time + Duration.ofSeconds(1)),
+            SourceState(1, "sensor.old_energy_availability", "off", time + Duration.ofSeconds(2))
+        )
+
+        statePipeline.execute(states.asFlow())
+
+        delay(3000)
+        val records = getRecords()
+        then(records).hasSize(2)
+
+        records.assertContains(time + Duration.ofSeconds(1), "energy", "availability", true, mapOf("device" to "energy"))
+        records.assertContains(time + Duration.ofSeconds(2), "energy", "availability", false, mapOf("device" to "energy"))
     }
 
     @Test

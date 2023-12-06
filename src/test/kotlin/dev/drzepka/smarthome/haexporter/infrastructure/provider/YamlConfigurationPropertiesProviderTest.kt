@@ -1,6 +1,7 @@
 package dev.drzepka.smarthome.haexporter.infrastructure.provider
 
 import dev.drzepka.smarthome.haexporter.domain.value.ValueType
+import org.assertj.core.api.BDDAssertions.entry
 import org.assertj.core.api.BDDAssertions.then
 import org.junit.jupiter.api.Test
 
@@ -30,6 +31,8 @@ class YamlConfigurationPropertiesProviderTest {
                 then(stateMapping).isEqualTo("state_mapping")
                 then(ignoredValues.matches("ignored_value")).isTrue
             }
+
+            then(deviceNameMapping).containsExactly(entry("old_name", "new_name"))
         }
 
         then(root.stateMappings).hasSize(1)

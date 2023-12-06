@@ -34,6 +34,8 @@ schemas:
         state_mapping: state_mapping
         ignored_values:
           - ignored_value
+    device_name_mapping:
+      old_name: new_name
 
 state_mappings:
   - name: binary_sensor

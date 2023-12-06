@@ -11,6 +11,7 @@ import dev.drzepka.smarthome.haexporter.domain.service.EntityIdResolver
 import dev.drzepka.smarthome.haexporter.domain.service.StateMapper
 import dev.drzepka.smarthome.haexporter.domain.service.StateValueConverter
 import dev.drzepka.smarthome.haexporter.domain.util.Component
+import dev.drzepka.smarthome.haexporter.domain.value.EntityId
 import dev.drzepka.smarthome.haexporter.domain.value.StateValue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
@@ -63,7 +64,14 @@ class StatePipeline(
         }
 
         val value = processState(input.state, schema.getEntitySchema(entityId.sensor))
-        return value?.let { State(input.lastUpdated, entityId, schema.influxMeasurementName, it) }
+        return value?.let {
+            State(
+                input.lastUpdated,
+                transformEntityId(entityId, schema),
+                schema.influxMeasurementName,
+                it
+            )
+        }
     }
 
     private fun processState(input: String, schema: EntitySchema): StateValue? {
@@ -82,6 +90,11 @@ class StatePipeline(
             value = stateValueConverter.convert(input, schema.type)
 
         return value
+    }
+
+    private fun transformEntityId(entityId: EntityId, schema: SchemaProperties): EntityId {
+        val updatedDevice = schema.deviceNameMapping?.get(entityId.device) ?: return entityId
+        return entityId.copy(device = updatedDevice)
     }
 
     private fun getSchema(name: String): SchemaProperties? = schemas.firstOrNull { it.name == name }

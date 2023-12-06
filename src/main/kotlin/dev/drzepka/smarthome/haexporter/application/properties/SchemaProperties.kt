@@ -8,6 +8,7 @@ class SchemasProperties(private val properties: List<SchemaProperties>) : List<S
 data class SchemaProperties(
     val name: String,
     val influxMeasurementName: String,
+    val deviceNameMapping: Map<String, String>? = null,
     val entities: List<EntitySchema> = emptyList()
 ) {
 

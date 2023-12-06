@@ -8,9 +8,9 @@ internal class SchemaPropertiesTest {
     @Test
     fun `should get correct entity schema`() {
         val properties = SchemaProperties(
-            "name",
-            "influxName",
-            listOf(
+            name = "name",
+            influxMeasurementName = "influxName",
+            entities = listOf(
                 EntitySchema(sensor = "phase_a", stateMapping = "mapping-a"),
                 EntitySchema(sensor = null, stateMapping = "mapping-b"),
                 EntitySchema(sensor = "*", stateMapping = "mapping-c")
@@ -25,9 +25,9 @@ internal class SchemaPropertiesTest {
     @Test
     fun `should get built-in default entity schema if one isn't present in properties`() {
         val properties = SchemaProperties(
-            "name",
-            "influxName",
-            listOf(
+            name = "name",
+            influxMeasurementName = "influxName",
+            entities = listOf(
                 EntitySchema(sensor = "phase_a", stateMapping = "mapping-a")
             )
         )
