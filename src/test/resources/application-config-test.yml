@@ -18,7 +18,8 @@ influxdb:
 
 entities:
   - selector:
-      device: test_device
+      devices:
+        - test_device
       sensors:
         - sensor1
         - sensor2

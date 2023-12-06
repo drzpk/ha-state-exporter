@@ -12,8 +12,8 @@ import org.junit.jupiter.params.provider.ValueSource
 class EntityIdResolverTest {
 
     private val properties = listOf(
-        EntityProperties(EntitySelector(device = "living_room"), "mapping1"),
-        EntityProperties(EntitySelector(device = "kitchen_light"), "mapping2")
+        EntityProperties(EntitySelector(devices = listOf("living_room")), "mapping1"),
+        EntityProperties(EntitySelector(devices = listOf("kitchen_light")), "mapping2")
     )
 
     private val resolver = EntityIdResolver(EntitiesProperties(properties))

@@ -13,7 +13,7 @@ class YamlConfigurationPropertiesProviderTest {
 
         then(root.entities).hasSize(1)
         with(root.entities.first()) {
-            then(selector.device).isEqualTo("test_device")
+            then(selector.devices).containsExactly("test_device")
             then(selector.sensors).containsExactly("sensor1", "sensor2")
             then(schema).isEqualTo("energy")
         }

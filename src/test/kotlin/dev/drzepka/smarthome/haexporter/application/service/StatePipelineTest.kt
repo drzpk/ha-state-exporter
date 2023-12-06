@@ -42,8 +42,8 @@ import java.time.Instant
 internal class StatePipelineTest : BaseInfluxDBTest(), KoinTrait, KoinTest {
 
     private val entityProperties = listOf(
-        EntityProperties(EntitySelector(device = "outside"), "outside_sensor_schema"),
-        EntityProperties(EntitySelector(device = "energy"), "energy"),
+        EntityProperties(EntitySelector(devices = listOf("outside")), "outside_sensor_schema"),
+        EntityProperties(EntitySelector(devices = listOf("energy")), "energy"),
     )
 
     private val schemaProperties = listOf(

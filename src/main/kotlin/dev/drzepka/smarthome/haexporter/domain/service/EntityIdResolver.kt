@@ -5,7 +5,7 @@ import dev.drzepka.smarthome.haexporter.domain.value.EntityId
 import org.apache.logging.log4j.kotlin.Logging
 
 class EntityIdResolver(entitiesProperties: EntitiesProperties) {
-    private val knownDevices = entitiesProperties.map { it.selector.device }.toSet()
+    private val knownDevices = entitiesProperties.flatMap { it.selector.devices }.toSet()
 
     fun resolve(value: String): EntityId? {
         val parts = value.split('.', limit = 2)

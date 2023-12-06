@@ -60,7 +60,7 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
     private lateinit var connectionProvider: SQLConnectionProvider
 
     private val entityProperties = listOf(
-        EntityProperties(EntitySelector(device = "temperature"), "temperature"),
+        EntityProperties(EntitySelector(devices = listOf("temperature")), "temperature"),
         EntityProperties(EntitySelector(`class` = "binary_sensor", device = "door", sensor = "state"), "door")
     )
 

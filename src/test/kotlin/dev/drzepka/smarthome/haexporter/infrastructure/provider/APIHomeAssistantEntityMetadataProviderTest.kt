@@ -45,12 +45,14 @@ class APIHomeAssistantEntityMetadataProviderTest {
                         "attributes": {},
                         "entity_id": "sun.sun",
                         "last_changed": "2023-06-13T12:01:32.418320+00:00",
+                        "last_updated": "2023-06-13T12:01:32.418320+00:00",
                         "state": "below_horizon"
                     },
                     {
                         "attributes": {},
                         "entity_id": "process.Dropbox",
                         "last_changed": "2023-06-13T12:42:32.698571+01:00",
+                        "last_updated": "2023-06-13T12:42:32.698571+01:00",
                         "state": "on"
                     }
                 ]

@@ -58,8 +58,9 @@ internal class EntityConfigurationResolverTest {
     @Test
     fun `should resolve configuration with multiple values in selector`() {
         val properties = listOf(
-            EntityProperties(EntitySelector(listOf("class1"), "dev1", listOf("sensor1", "sensor2")), "schema1"),
-            EntityProperties(EntitySelector(listOf("class2", "class3"), "dev1", listOf("sensor3")), "schema2")
+            EntityProperties(EntitySelector(listOf("class1"), listOf("dev1"), listOf("sensor1", "sensor2")), "schema1"),
+            EntityProperties(EntitySelector(listOf("class2", "class3"), listOf("dev1"), listOf("sensor3")), "schema2"),
+            EntityProperties(EntitySelector(listOf("class4"), listOf("dev1", "dev2"), listOf("sensor4")), "schema3"),
         )
 
         val resolver = EntityConfigurationResolver(EntitiesProperties(properties))
@@ -68,6 +69,7 @@ internal class EntityConfigurationResolverTest {
         then(resolver.resolve(EntityId("class1", "dev1", "sensor2"))).matches { it?.schema == "schema1" }
         then(resolver.resolve(EntityId("class2", "dev1", "sensor3"))).matches { it?.schema == "schema2" }
         then(resolver.resolve(EntityId("class3", "dev1", "sensor3"))).matches { it?.schema == "schema2" }
+        then(resolver.resolve(EntityId("class4", "dev2", "sensor4"))).matches { it?.schema == "schema3" }
         then(resolver.resolve(EntityId("class1", "dev1", "sensor3"))).isNull()
         then(resolver.resolve(EntityId("class2", "dev1", "sensor4"))).isNull()
     }
@@ -113,11 +115,11 @@ internal class EntityConfigurationResolverTest {
                 ),
                 ElementalEntitySelector("class1", "dev1", "sensor2") to listOf(
                     EntityProperties(
-                        EntitySelector(listOf("class1"), "dev1", listOf("sensor1", "sensor2")),
+                        EntitySelector(listOf("class1"), listOf("dev1"), listOf("sensor1", "sensor2")),
                         "overlapping-sensor"
                     ),
                     EntityProperties(
-                        EntitySelector(listOf("class1"), "dev1", listOf("sensor2", "sensor3")),
+                        EntitySelector(listOf("class1"), listOf("dev1"), listOf("sensor2", "sensor3")),
                         "overlapping-sensor"
                     )
                 )
