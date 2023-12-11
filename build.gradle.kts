@@ -35,6 +35,7 @@ dependencies {
     implementation("com.zaxxer:HikariCP:5.1.0")
     implementation("org.mariadb.jdbc:mariadb-java-client:3.3.0")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.2")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2")
     runtimeOnly("org.jetbrains.kotlin:kotlin-reflect")
 
     testImplementation(platform("org.junit:junit-bom:5.9.3"))

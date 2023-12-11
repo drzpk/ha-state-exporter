@@ -1,6 +1,7 @@
 package dev.drzepka.smarthome.haexporter
 
 import dev.drzepka.smarthome.haexporter.application.configuration.haStateExporterModule
+import dev.drzepka.smarthome.haexporter.application.properties.ExporterProperties
 import dev.drzepka.smarthome.haexporter.application.service.JobScheduler
 import dev.drzepka.smarthome.haexporter.application.service.StateExporter
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -14,7 +15,6 @@ import org.apache.logging.log4j.kotlin.Logging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
-import java.time.Duration
 
 fun main() {
     val handler = CoroutineExceptionHandler { _, exception ->
@@ -32,12 +32,13 @@ fun main() {
 private class HaStateExporter(private val scope: CoroutineScope) : KoinComponent {
     private val scheduler: JobScheduler by inject()
     private val exporter: StateExporter by inject()
+    private val properties: ExporterProperties by inject()
 
     fun start() {
         logger.info("Starting HA state exporter")
 
         var initialLaunch = true
-        scheduler.scheduleJob("exporter", Duration.ofMinutes(5)) {
+        scheduler.scheduleJob("exporter", properties.interval) {
             if (!initialLaunch)
                 exporter.export()
         }

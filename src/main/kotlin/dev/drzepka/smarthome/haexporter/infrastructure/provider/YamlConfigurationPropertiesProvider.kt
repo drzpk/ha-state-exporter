@@ -3,12 +3,12 @@ package dev.drzepka.smarthome.haexporter.infrastructure.provider
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import dev.drzepka.smarthome.haexporter.application.properties.RootProperties
 import dev.drzepka.smarthome.haexporter.application.provider.ConfigurationPropertiesProvider
 import java.io.File
-import java.lang.IllegalArgumentException
 
 class YamlConfigurationPropertiesProvider private constructor(source: String) : ConfigurationPropertiesProvider {
     override val root: RootProperties
@@ -17,6 +17,7 @@ class YamlConfigurationPropertiesProvider private constructor(source: String) : 
         val mapper = YAMLMapper()
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         mapper.propertyNamingStrategy = PropertyNamingStrategies.SnakeCaseStrategy()
+        mapper.registerModule(JavaTimeModule())
         mapper.registerKotlinModule()
 
         root = mapper.readValue(source)
