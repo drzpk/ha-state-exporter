@@ -56,8 +56,8 @@ val infrastructureModule = module {
 }
 
 val applicationModule = module {
-    single { StatePipeline(get(), get(), get(), get(), get(), get()) }
-    single { StateExporter(get(), get(), get(), get(), get(), get()) }
+    single { StatePipeline(get(), get(), get(), get(), get()) }
+    single { StateExporter(get(), get(), get(), get(), get(), get(), get()) }
     single { JobScheduler(get(), get()) }
 }
 

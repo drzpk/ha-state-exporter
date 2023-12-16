@@ -5,7 +5,6 @@ import dev.drzepka.smarthome.haexporter.application.properties.EntitySchema
 import dev.drzepka.smarthome.haexporter.application.properties.SchemaProperties
 import dev.drzepka.smarthome.haexporter.application.properties.SchemasProperties
 import dev.drzepka.smarthome.haexporter.domain.entity.State
-import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
 import dev.drzepka.smarthome.haexporter.domain.service.EntityConfigurationResolver
 import dev.drzepka.smarthome.haexporter.domain.service.EntityIdResolver
 import dev.drzepka.smarthome.haexporter.domain.service.StateMapper
@@ -23,21 +22,16 @@ class StatePipeline(
     private val entityConfigurationResolver: EntityConfigurationResolver,
     private val stateMapper: StateMapper,
     private val stateValueConverter: StateValueConverter,
-    private val schemas: SchemasProperties,
-    private val stateRepository: StateRepository
+    private val schemas: SchemasProperties
 ) {
 
-    suspend fun execute(source: Flow<SourceState>) {
-        val mapped = source.mapNotNull {
-            try {
-                processSingle(it)
-            } catch (e: Exception) {
-                logger.error(e) { "Error while processing $it" }
-                null
-            }
+    suspend fun execute(source: Flow<SourceState>): Flow<State> = source.mapNotNull {
+        try {
+            processSingle(it)
+        } catch (e: Exception) {
+            logger.error(e) { "Error while processing $it" }
+            null
         }
-
-        stateRepository.save(mapped)
     }
 
     private fun processSingle(input: SourceState): State? {

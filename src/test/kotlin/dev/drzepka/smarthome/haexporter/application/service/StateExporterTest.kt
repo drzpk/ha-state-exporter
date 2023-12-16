@@ -6,21 +6,22 @@ import dev.drzepka.smarthome.haexporter.application.model.SourceStateQuery
 import dev.drzepka.smarthome.haexporter.application.properties.ExporterProperties
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantEntityMetadataProvider
 import dev.drzepka.smarthome.haexporter.application.provider.HomeAssistantStateProvider
+import dev.drzepka.smarthome.haexporter.domain.entity.State
+import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
 import dev.drzepka.smarthome.haexporter.domain.service.EntityIdResolver
 import dev.drzepka.smarthome.haexporter.domain.service.ProcessingStrategyResolver
 import dev.drzepka.smarthome.haexporter.domain.value.EntityId
 import dev.drzepka.smarthome.haexporter.domain.value.EntityStateTime
 import dev.drzepka.smarthome.haexporter.domain.value.strategy.ProcessingStrategy
 import dev.drzepka.smarthome.haexporter.domain.value.strategy.WorkUnit
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.junit5.MockKExtension
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.BDDAssertions.then
@@ -36,6 +37,7 @@ internal class StateExporterTest {
     private val entityIdResolver = mockk<EntityIdResolver>()
     private val stateProvider = mockk<HomeAssistantStateProvider>()
     private val statePipeline = mockk<StatePipeline>()
+    private val stateRepository = mockk<StateRepository>()
 
     private val flowSlot = slot<Flow<SourceState>>()
 
@@ -45,6 +47,7 @@ internal class StateExporterTest {
         entityIdResolver,
         stateProvider,
         statePipeline,
+        stateRepository,
         ExporterProperties(batchSize = 500)
     )
 
@@ -72,13 +75,17 @@ internal class StateExporterTest {
             strategyResolver.resolve(listOf(EntityStateTime(ENTITY_ID_1, TIME_1), EntityStateTime(ENTITY_ID_2, TIME_2)))
         } returns strategy
 
+        val stateFlow = emptyFlow<State>()
         coEvery { stateProvider.getStates(any()) } returns sourceStates
-        coEvery { statePipeline.execute(capture(flowSlot)) } just Runs
+        coEvery { statePipeline.execute(capture(flowSlot)) } returns stateFlow
 
         stateExporter.export()
 
         then(flowSlot.captured.toList()).containsAll(sourceStates)
-        coVerify { stateProvider.getStates(SourceStateQuery(workUnitTime, setOf(ENTITY_ID_1_STR, ENTITY_ID_2_STR), 0, 500)) }
+        coVerify {
+            stateProvider.getStates(SourceStateQuery(workUnitTime, setOf(ENTITY_ID_1_STR, ENTITY_ID_2_STR), 0, 500))
+            stateRepository.save(refEq(stateFlow))
+        }
     }
 
     companion object {
