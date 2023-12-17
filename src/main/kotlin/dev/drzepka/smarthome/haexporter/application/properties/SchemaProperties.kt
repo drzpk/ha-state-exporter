@@ -27,7 +27,7 @@ class EntitySchema(
     val sensor: String? = null,
     val type: ValueType = ValueType.STRING,
     val stateMapping: String? = null,
-    val ignoreUnmappedState: Boolean = true,
+    val ignoreUnmappedState: Boolean = false,
     ignoredValues: List<String> = emptyList(),
 ) {
     val ignoredValues = MultiValueMatcher(ignoredValues)
