@@ -103,4 +103,16 @@ class MariaDBHomeAssistantStateProviderTest : MariaDBTrait {
 
         Unit
     }
+
+    @Test
+    fun `should skip query on missing entity metadata`() = runBlocking {
+        val time = Instant.now().trimToSeconds()
+        connectionProvider.createState(1, "entity_1", "state_1", time.plusSeconds(1))
+        connectionProvider.createState(2, "entity_2", "state_2", time.plusSeconds(2))
+
+        val query = SourceStateQuery(time, setOf("entity_3"), 0, 10)
+        val states = stateProvider.getStates(query)
+
+        then(states).isEmpty()
+    }
 }

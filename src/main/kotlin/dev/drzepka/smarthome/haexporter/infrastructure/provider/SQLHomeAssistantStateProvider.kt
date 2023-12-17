@@ -14,6 +14,11 @@ class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider)
 
     override suspend fun getStates(query: SourceStateQuery): List<SourceState> {
         val sqlQuery = createSqlQuery(query)
+        logger.trace { "Source state query: $query" }
+        logger.trace { "SQL query:\n$sqlQuery" }
+        if (sqlQuery == null)
+            return emptyList()
+
         return provider.acquireConnection {
             val resultSet = it
                 .createStatement()
@@ -28,12 +33,8 @@ class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider)
         }
     }
 
-    private suspend fun createSqlQuery(query: SourceStateQuery): String {
-        val metadataIdsCondition = if (query.entities?.isNotEmpty() == true)
-            getMetadataIdsCondition(query.entities)
-                .joinToString(prefix = "(", separator = ", ", postfix = ")")
-                .let { "$COLUMN_METADATA_ID IN $it" }
-        else "1=1"
+    private suspend fun createSqlQuery(query: SourceStateQuery): String? {
+        val metadataIdsCondition = getMetadataIdsCondition(query.entities) ?: return null
 
         return """
             SELECT s.*, m.$COLUMN_ENTITY_ID
@@ -49,16 +50,30 @@ class SQLHomeAssistantStateProvider(private val provider: SQLConnectionProvider)
         """.trimIndent()
     }
 
-    private suspend fun getMetadataIdsCondition(entities: Collection<String>): Set<Int> =
+    private suspend fun getMetadataIdsCondition(entities: Collection<String>?): String? {
+        return if (entities?.isNotEmpty() == true) {
+            val ids = getMetadataIds(entities)
+            if (ids.isEmpty())
+                return null
+
+            ids.joinToString(prefix = "(", separator = ", ", postfix = ")")
+                .let { "$COLUMN_METADATA_ID IN $it" }
+        } else "1=1"
+    }
+
+    private suspend fun getMetadataIds(entities: Collection<String>): Set<Int> =
         provider.acquireConnection {
-            val entityIds = entities.joinToString { e ->"'" + e.replace("'", "''") + "'" }
-            val rs = it
-                .createStatement()
-                .executeQueryAsync("""
+            val entityIds = entities.joinToString { e -> "'" + e.replace("'", "''") + "'" }
+            val query = """
                     SELECT $COLUMN_METADATA_ID
                     FROM $TABLE_STATES_META
                     WHERE entity_id IN ($entityIds)
-                """.trimIndent())
+                """.trimIndent()
+            logger.trace { "Metadata ids SQL query:\n$query" }
+
+            val rs = it
+                .createStatement()
+                .executeQueryAsync(query)
 
             sequence {
                 while (rs.next()) {
