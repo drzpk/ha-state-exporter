@@ -12,6 +12,13 @@ class TestClock : Clock() {
 
     private val zoneId = ZoneId.systemDefault()
 
+    fun setTime(instant: Instant) {
+        instant.atZone(zoneId).also {
+            localDate = it.toLocalDate()
+            localTime = it.toLocalTime()
+        }
+    }
+
     override fun instant(): Instant {
         val date = localDate ?: LocalDate.now()
         val time = localTime ?: LocalTime.now()

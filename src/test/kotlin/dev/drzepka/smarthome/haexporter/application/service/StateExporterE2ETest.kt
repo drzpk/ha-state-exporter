@@ -25,12 +25,12 @@ import dev.drzepka.smarthome.haexporter.trait.InfluxDBTrait.Companion.createInfl
 import dev.drzepka.smarthome.haexporter.trait.KoinTrait
 import dev.drzepka.smarthome.haexporter.trait.MariaDBTrait
 import dev.drzepka.smarthome.haexporter.trait.MariaDBTrait.Companion.createMariaDBContainer
+import dev.drzepka.smarthome.haexporter.util.TestClock
 import io.mockk.coEvery
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.runBlocking
-import org.assertj.core.api.BDDAssertions.then
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -44,6 +44,7 @@ import org.testcontainers.containers.InfluxDBContainer
 import org.testcontainers.containers.MariaDBContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.time.Clock
 import java.time.Instant
 
 @Testcontainers
@@ -83,6 +84,7 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
     )
 
     private val metadataProvider = mockk<HomeAssistantEntityMetadataProvider>()
+    private val clock = TestClock()
 
     private val stateRepository by inject<StateRepository>()
     private val stateExporter by inject<StateExporter>()
@@ -101,6 +103,7 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
                 single { InfluxDBClientProvider(getDataSourceProperties()) }
                 single { EntitiesProperties(entityProperties) }
                 single { SchemasProperties(schemaProperties) }
+                single<Clock> { clock }
             }
 
             modules(mariaDBModule, influxDBModule, domainModule, applicationModule, defaultConfigurationModule, testModule)
@@ -132,9 +135,7 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
         )
 
         stateExporter.export()
-
         val records = getRecords()
-        then(records).hasSize(5)
 
         records.assertContains(time.plusSeconds(6), "doors", "state", "open", tags("door", "state", "binary_sensor"))
         records.assertContains(time.plusSeconds(1), "temp", "inside", 21.33, tags("temperature", "inside"))
@@ -167,9 +168,7 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
         )
 
         stateExporter.export()
-
         val records = getRecords()
-        //then(records).hasSize(7)
 
         records.assertContains(time.plusSeconds(1), "doors", "state", "open", tags("door", "state", "binary_sensor"))
         records.assertContains(time.plusSeconds(2), "temp", "outside", 21.05, tags("temperature", "outside"))
@@ -178,9 +177,64 @@ internal class StateExporterE2ETest : MariaDBTrait, InfluxDBTrait, KoinTrait, Ko
         records.assertContains(time.plusSeconds(12), "temp", "outside", 29.31, tags("temperature", "outside"))
     }
 
+    @Test
+    fun `should save export status on successful export`() = runBlocking {
+        val time = Instant.now().trimToSeconds()
+        clock.setTime(time)
+
+        connectionProvider.createState(1, "binary_sensor.door_state", "open", time.plusSeconds(1))
+        connectionProvider.createState(2, "sensor.temperature_inside", "21.01", time.plusSeconds(3))
+        connectionProvider.createState(3, "sensor.temperature_outside", "21.05", time.plusSeconds(2))
+
+        coEvery { metadataProvider.getEntityMetadata() } returns listOf(
+            EntityMetadata("sensor.temperature_inside", Instant.now()),
+            EntityMetadata("sensor.temperature_outside", Instant.now()),
+            EntityMetadata("sensor.temperature", Instant.now()),
+            EntityMetadata("binary_sensor.door_state", Instant.now())
+        )
+
+        stateExporter.export()
+        val records = getRecords()
+
+        val tags = mapOf("status" to "success")
+        records.assertContains(time, STATUS_MEASUREMENT, "started_at", time.toEpochMilli(), tags)
+        records.assertContains(time, STATUS_MEASUREMENT, "finished_at", time.toEpochMilli(), tags)
+        records.assertNotContains(time, STATUS_MEASUREMENT, "exception")
+        records.assertContains(time, STATUS_MEASUREMENT, "loaded_states", 3L, tags)
+        records.assertContains(time, STATUS_MEASUREMENT, "saved_states", 3L, tags)
+        records.assertContains(time, STATUS_MEASUREMENT, "entities", 4L, tags)
+        records.assertContains(time, STATUS_MEASUREMENT, "first_state_time", time.plusSeconds(1).toEpochMilli(), tags)
+        records.assertContains(time, STATUS_MEASUREMENT, "last_state_time", time.plusSeconds(3).toEpochMilli(), tags)
+    }
+
+    @Test
+    fun `should save export status on failed export`() = runBlocking {
+        val time = Instant.now().trimToSeconds()
+        clock.setTime(time)
+
+        coEvery { metadataProvider.getEntityMetadata() } throws Exception("Something unexpected happened")
+
+        stateExporter.export()
+        val records = getRecords()
+
+        val tags = mapOf("status" to "failure")
+        records.assertContains(time, STATUS_MEASUREMENT, "started_at", time.toEpochMilli(), tags)
+        records.assertContains(time, STATUS_MEASUREMENT, "finished_at", time.toEpochMilli(), tags)
+        records.assertContains(time, STATUS_MEASUREMENT, "exception", "java.lang.Exception: Something unexpected happened", tags)
+        records.assertContains(time, STATUS_MEASUREMENT, "loaded_states", 0L, tags)
+        records.assertContains(time, STATUS_MEASUREMENT, "saved_states", 0L, tags)
+        records.assertContains(time, STATUS_MEASUREMENT, "entities", 0L, tags)
+        records.assertNotContains(time, STATUS_MEASUREMENT, "first_state_time")
+        records.assertNotContains(time, STATUS_MEASUREMENT, "last_state_time")
+    }
+
     private fun tags(dev: String, sensor: String?, clazz: String = "sensor"): Map<String, String> =
         mutableMapOf("class" to clazz, "device" to dev).also {
             if (sensor != null)
                 it["sensor"] = sensor
         }
+
+    companion object {
+        private const val STATUS_MEASUREMENT = "ha_state_exporter_status"
+    }
 }

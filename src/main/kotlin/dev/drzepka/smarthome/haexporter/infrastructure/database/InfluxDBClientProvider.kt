@@ -10,8 +10,10 @@ import java.time.Duration
 
 class InfluxDBClientProvider(private val properties: InfluxDBDataSourceProperties) {
     val client: InfluxDBClientKotlin
-    val bucket: String
+    val stateBucket: String
         get() = properties.bucket
+    val exportStatusBucket: String?
+        get() = properties.exportStatusBucket
 
     init {
         logger.info { "Creating InfluxDB client with ${properties.copy(token = "***")}" }
@@ -22,7 +24,6 @@ class InfluxDBClientProvider(private val properties: InfluxDBDataSourcePropertie
             .writeTimeout(Duration.ofSeconds(5))
         val options = InfluxDBClientOptions.builder()
             .url(properties.url)
-            .bucket(properties.bucket)
             .org(properties.org)
             .authenticateToken(properties.token.toCharArray())
             .okHttpClient(httpClient)

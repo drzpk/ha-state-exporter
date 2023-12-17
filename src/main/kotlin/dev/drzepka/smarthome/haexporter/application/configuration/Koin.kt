@@ -7,6 +7,7 @@ import dev.drzepka.smarthome.haexporter.application.service.JobScheduler
 import dev.drzepka.smarthome.haexporter.application.service.StateExporter
 import dev.drzepka.smarthome.haexporter.application.service.StatePipeline
 import dev.drzepka.smarthome.haexporter.domain.properties.EntitiesProperties
+import dev.drzepka.smarthome.haexporter.domain.repository.ExportStatusRepository
 import dev.drzepka.smarthome.haexporter.domain.repository.StateRepository
 import dev.drzepka.smarthome.haexporter.domain.service.EntityConfigurationResolver
 import dev.drzepka.smarthome.haexporter.domain.service.EntityIdResolver
@@ -19,6 +20,7 @@ import dev.drzepka.smarthome.haexporter.infrastructure.database.SQLConnectionPro
 import dev.drzepka.smarthome.haexporter.infrastructure.provider.APIHomeAssistantEntityMetadataProvider
 import dev.drzepka.smarthome.haexporter.infrastructure.provider.SQLHomeAssistantStateProvider
 import dev.drzepka.smarthome.haexporter.infrastructure.provider.YamlConfigurationPropertiesProvider
+import dev.drzepka.smarthome.haexporter.infrastructure.repository.InfluxDBExportStatusRepository
 import dev.drzepka.smarthome.haexporter.infrastructure.repository.InfluxDBStateRepository
 import kotlinx.coroutines.CoroutineScope
 import org.koin.dsl.module
@@ -40,6 +42,7 @@ val mariaDBModule = module {
 val influxDBModule = module {
     single { InfluxDBClientProvider(get()) }
     single<StateRepository> { InfluxDBStateRepository(get()) }
+    single<ExportStatusRepository> { InfluxDBExportStatusRepository(get()) }
 }
 
 val infrastructureModule = module {
@@ -57,7 +60,7 @@ val infrastructureModule = module {
 
 val applicationModule = module {
     single { StatePipeline(get(), get(), get(), get(), get()) }
-    single { StateExporter(get(), get(), get(), get(), get(), get(), get()) }
+    single { StateExporter(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     single { JobScheduler(get(), get()) }
 }
 

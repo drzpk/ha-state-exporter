@@ -23,7 +23,7 @@ class InfluxDBStateRepository(private val provider: InfluxDBClientProvider) : St
                 val points = chunk.map { it.toPoint() }
                 provider.client
                     .getWriteKotlinApi()
-                    .writePoints(points)
+                    .writePoints(points, provider.stateBucket)
 
                 logger.info { "Saved ${chunk.size} states, chunk #${stats.chunkCount}" }
                 stats.update(chunk)
@@ -34,7 +34,7 @@ class InfluxDBStateRepository(private val provider: InfluxDBClientProvider) : St
 
     override suspend fun getLastStateTime(entity: EntityId): Instant? {
         val flux = Flux
-            .from(provider.bucket)
+            .from(provider.stateBucket)
             .range(Instant.EPOCH, Instant.now())
             .filter(Restrictions.tag(CLASS_TAG).equal(entity.classValue))
             .filter(Restrictions.tag(DEVICE_TAG).equal(entity.device))

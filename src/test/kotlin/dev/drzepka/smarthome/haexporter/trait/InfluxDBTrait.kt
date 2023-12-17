@@ -25,6 +25,7 @@ interface InfluxDBTrait {
     fun getDataSourceProperties() = InfluxDBDataSourceProperties(
         influxDBContainer.url,
         influxDBContainer.bucket,
+        influxDBContainer.bucket,
         influxDBContainer.organization,
         influxDBContainer.adminToken.get()
     )
@@ -56,8 +57,8 @@ interface InfluxDBTrait {
         time: Instant,
         measurement: String,
         field: String,
-        value: Any,
-        tags: Map<String, String>
+        value: Any?,
+        tags: Map<String, String> = emptyMap()
     ) {
         val record = this.firstOrNull { it.time == time && it.measurement == measurement && it.field == field }
             ?: fail("No record found at time=$time with measurement=$measurement and field=$field")
