@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "1.8.21"
     kotlin("plugin.allopen") version "1.8.21"
+    id("com.google.cloud.tools.jib") version "3.4.0"
 }
 
 group = "dev.drzepka.smarthome"
@@ -63,5 +64,18 @@ tasks.test {
     useJUnitPlatform()
     testLogging {
         events("passed", "skipped", "failed")
+    }
+}
+
+jib {
+    from {
+        image = "eclipse-temurin:17-jre-alpine"
+    }
+    to {
+        image = "gcr.io/drzpk/ha-state-exporter"
+        tags = setOf(
+            "latest",
+            version.toString()
+        )
     }
 }
