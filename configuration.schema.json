@@ -1,0 +1,369 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/drzpk/ha-state-exporter/configuration.schema.json",
+  "title": "HA State Exporter",
+  "description": "HA State Exporter configuration schema",
+  "type": "object",
+  "properties": {
+    "homeassistant": {
+      "type": "object",
+      "description": "Home Assistant-specific properties",
+      "properties": {
+        "database": {
+          "type": "object",
+          "description": "Home Assistant database configuration",
+          "properties": {
+            "driver": {
+              "type": "string",
+              "description": "Database driver name",
+              "enum": [
+                "mariadb"
+              ]
+            },
+            "host": {
+              "type": "string",
+              "description": "Home Assistant database host"
+            },
+            "port": {
+              "type": "integer",
+              "description": "Home Assistant database port"
+            },
+            "username": {
+              "type": "string",
+              "description": "Home Assistant database user name"
+            },
+            "password": {
+              "type": "string",
+              "description": "Home Assistant database password"
+            },
+            "database": {
+              "type": "string",
+              "description": "Home Assistant database name"
+            }
+          },
+          "required": [
+            "driver",
+            "host",
+            "port",
+            "username",
+            "password",
+            "database"
+          ]
+        },
+        "api": {
+          "type": "object",
+          "description": "Home Assistant API configuration",
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "Home Assistant instance URL"
+            },
+            "token": {
+              "type": "string",
+              "description": "Home Assistant long-lived access token. Can be generated in the profile settings"
+            }
+          },
+          "required": [
+            "url",
+            "token"
+          ]
+        }
+      },
+      "required": [
+        "database",
+        "api"
+      ]
+    },
+    "influxdb": {
+      "type": "object",
+      "description": "InfluxDB configuration",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "InfluxDB URL",
+          "format": "uri"
+        },
+        "bucket": {
+          "type": "string",
+          "description": "Bucket to which states will be saved"
+        },
+        "export_status_bucket": {
+          "type": "string",
+          "description": "If defined, identifies the bucket to which export status metrics will be saved"
+        },
+        "org": {
+          "type": "string",
+          "description": "Organization"
+        },
+        "token": {
+          "type": "string",
+          "description": "Token"
+        }
+      },
+      "required": [
+        "url",
+        "bucket",
+        "org",
+        "token"
+      ]
+    },
+    "exporter": {
+      "type": "object",
+      "description": "General HA State Exporter settings",
+      "properties": {
+        "interval": {
+          "type": "string",
+          "description": "How often the export task is launched",
+          "pattern": "^([-+]?)P(?:([-+]?[0-9]+)D)?(T(?:([-+]?[0-9]+)H)?(?:([-+]?[0-9]+)M)?(?:([-+]?[0-9]+)(?:[.,]([0-9]{0,9}))?S)?)?$",
+          "default": "PT15S",
+          "examples": [
+            "PT10S",
+            "PT1S",
+            "PT1M"
+          ]
+        },
+        "batch_size": {
+          "type": "integer",
+          "description": "How many records fetch at once from Home Assistant database",
+          "default": "5000"
+        },
+        "processing_limit": {
+          "type": "integer",
+          "description": "How many records to process in a single export task",
+          "default": "50000"
+        },
+        "processing": {
+          "type": "object",
+          "description": "Advanced processing properties",
+          "properties": {
+            "lag_threshold": {
+              "type": "string",
+              "description": "How large the entity state lag must be before switching to channeled strategy",
+              "pattern": "^([-+]?)P(?:([-+]?[0-9]+)D)?(T(?:([-+]?[0-9]+)H)?(?:([-+]?[0-9]+)M)?(?:([-+]?[0-9]+)(?:[.,]([0-9]{0,9}))?S)?)?$",
+              "default": "PT10M"
+            }
+          }
+        }
+      }
+    },
+    "entities": {
+      "type": "array",
+      "description": "Definitions of entities which should be exported to InfluxDB",
+      "items": {
+        "type": "object",
+        "description": "Entity definition",
+        "properties": {
+          "selector": {
+            "type": "object",
+            "description": "Criteria based on which entity will be resolved and associated with a schema",
+            "properties": {
+              "classes": {
+                "type": "array",
+                "description": "Class filter",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "class": {
+                "type": "string",
+                "description": "Shorthand for the classes property, can contain only a single class"
+              },
+              "devices": {
+                "type": "array",
+                "description": "Device segment filter",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "device": {
+                "type": "string",
+                "description": "Shorthand for the devices property, can contain only a single device"
+              },
+              "sensors": {
+                "type": "array",
+                "description": "Sensor segment filter",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "sensor": {
+                "type": "string",
+                "description": "Shorthand for the sensors property, can contain only a single sensor"
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "device"
+                ]
+              },
+              {
+                "required": [
+                  "devices"
+                ]
+              }
+            ]
+          },
+          "schema": {
+            "type": "string",
+            "description": "Name of the schema which will be assigned to the entity"
+          }
+        },
+        "required": [
+          "selector",
+          "schema"
+        ]
+      }
+    },
+    "schemas": {
+      "type": "array",
+      "description": "Schemas which define how the entity's states will be mapped to InfluxDB",
+      "items": {
+        "type": "object",
+        "description": "Schema definition",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Schema name"
+          },
+          "influx_measurement_name": {
+            "type": "string",
+            "description": "Name of the InfluxDB measurement under which states will be exported"
+          },
+          "device_name_mapping": {
+            "type": "object",
+            "description": "Used to map device name before saving it to database (e.g. when it was changed in HA)"
+          },
+          "entities": {
+            "type": "array",
+            "description": "Entity definitions",
+            "items": {
+              "type": "object",
+              "description": "Entity definition",
+              "properties": {
+                "sensor": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Entity's sensor segment for which the schema applies. Can be null if the entity doesn't have one"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Target type to which state value will be converted",
+                  "enum": [
+                    "STRING",
+                    "INTEGER",
+                    "FLOAT",
+                    "BOOLEAN"
+                  ]
+                },
+                "state_mapping": {
+                  "type": "string",
+                  "description": "Name of the state mapping to use for this entity"
+                },
+                "ignored_values": {
+                  "type": "array",
+                  "description": "State values to ignore (and skip exporting the state). Processed before state mappings.",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "name",
+          "influx_measurement_name",
+          "entities"
+        ]
+      },
+      "minItems": 1
+    },
+    "state_mappings": {
+      "type": "array",
+      "description": "State mapping definitions",
+      "items": {
+        "type": "object",
+        "description": "State mapping definition",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "State mapping name"
+          },
+          "target_type": {
+            "type": "string",
+            "description": "Type to which the 'to' values from mappings will be converted",
+            "enum": [
+              "STRING",
+              "INTEGER",
+              "FLOAT",
+              "BOOLEAN"
+            ]
+          },
+          "mappings": {
+            "type": "array",
+            "description": "State mappings",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "description": "Source value"
+                },
+                "to": {
+                  "type": [
+                    "string",
+                    "boolean",
+                    "number"
+                  ],
+                  "description": "target value"
+                }
+              },
+              "required": [
+                "from",
+                "to"
+              ]
+            },
+            "minItems": 1
+          },
+          "default_mapping": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Default mapping to apply when no other mappings match",
+            "properties": {
+              "to": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "number"
+                ],
+                "description": "Target value"
+              },
+              "required": [
+                "to"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "target_type",
+          "mappings"
+        ]
+      }
+    }
+  },
+  "required": [
+    "homeassistant",
+    "influxdb",
+    "entities",
+    "schemas"
+  ]
+}

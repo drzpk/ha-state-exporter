@@ -18,7 +18,7 @@ influxdb:
 
 exporter:
   batch_size: 10000
-  processing_limit: 50_000
+  processing_limit: 50000
   interval: PT10S
 
 entities:
@@ -28,8 +28,6 @@ entities:
         - *
         - '!test'
     schema: energy
-  - selector:
-      device: shellyem3_34945477f211
 
 schemas:
   - name: energy
