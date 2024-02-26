@@ -92,6 +92,9 @@ jib {
             "latest",
             version.toString()
         )
+        container {
+            creationTime.set("USE_CURRENT_TIMESTAMP")
+        }
     }
 }
 
