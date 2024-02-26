@@ -1,11 +1,26 @@
 plugins {
     kotlin("jvm") version "1.8.21"
     kotlin("plugin.allopen") version "1.8.21"
-    id("com.google.cloud.tools.jib") version "3.4.0"
+    id("com.google.cloud.tools.jib") version "3.4.1"
+    id("com.palantir.git-version") version "3.0.0"
+}
+
+fun projectVersion(): String {
+    var version = System.getProperty("VER")
+    if (version == null) {
+        val gitVersion: groovy.lang.Closure<String> by extra
+        version = gitVersion()
+
+        val prefixPattern = Regex("""^v\d+\.\d+\.\d+(?:\.dirty)?$""")
+        if (prefixPattern.matches(version))
+            version = version.substringAfter("v")
+    }
+
+    return version
 }
 
 group = "dev.drzepka.smarthome"
-version = "1.0.0"
+version = projectVersion()
 
 java {
     toolchain {
@@ -72,10 +87,14 @@ jib {
         image = "eclipse-temurin:17-jre-alpine"
     }
     to {
-        image = "gcr.io/drzpk/ha-state-exporter"
+        image = "ghcr.io/drzpk/ha-state-exporter"
         tags = setOf(
             "latest",
             version.toString()
         )
     }
+}
+
+tasks.register("projectVersion") {
+    println(projectVersion())
 }
